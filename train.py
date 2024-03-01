@@ -81,41 +81,45 @@ def main():
     # Wrap reader in tqdm for a progress bar. Note: No total count provided.
     iteration_count = 0 # Now and then we'll prune unpopular entries.
     for row in tqdm(reader, desc="Processing CSV rows"):
-        words = ' '.join(row).split()
-        print(f"Row: %s" % row)
-        # Process words three at a time with shifting window
-        for i in range(len(words) - 2):
-            context_words = words[i:i+3]
-            predictive_words = []
-            iteration_count += 1
+        try:
+            words = ' '.join(row).split()
+            # Process words three at a time with shifting window
+            for i in range(len(words) - 2):
+                context_words = words[i:i+3]
+                predictive_words = []
+                iteration_count += 1
 
-            # Every now and then, prune unpopular entries.
-            if iteration_count % 5000 == 0:
-              prune_unpopular(scores_file_path, dictionaries_path)
+                # Every now and then, prune unpopular entries.
+                if iteration_count % 5000 == 0:
+                  prune_unpopular(scores_file_path, dictionaries_path)
 
-            # Determine predictive words, up to three or until a punctuation mark
-            for j in range(i + 3, min(i + 6, len(words))):
-                if words[j] in ['.', ',', '\n', '\r', '\r\n']:
-                    break
-                predictive_words.append(words[j])
-            if not predictive_words:  # Skip if there are no predictive words
-                continue
-              
-            # Slugify the context words
-            context_slug = _slugify('_'.join(context_words))
-            
-            # Load or initialize the trie for the context words from its .pkl file
-            trie_file_path = os.path.join('training/dictionaries', f'{context_slug}.pkl')
-            trie = load_trie(trie_file_path)
-            
-            # Update the trie with the predictive words
-            update_trie(trie, predictive_words)
-            
-            # Save the updated trie back to the .pkl file
-            save_trie(trie, trie_file_path)
-            
-            # Update the counts in scores.pkl for the context words slug
-            update_scores(scores_file_path, context_slug)
+                # Determine predictive words, up to three or until a punctuation mark
+                for j in range(i + 3, min(i + 6, len(words))):
+                    if words[j] in ['.', ',', '\n', '\r', '\r\n']:
+                        break
+                    predictive_words.append(words[j])
+                if not predictive_words:  # Skip if there are no predictive words
+                    continue
+                  
+                # Slugify the context words
+                context_slug = _slugify('_'.join(context_words))
+                
+                # Load or initialize the trie for the context words from its .pkl file
+                trie_file_path = os.path.join('training/dictionaries', f'{context_slug}.pkl')
+                trie = load_trie(trie_file_path)
+                
+                # Update the trie with the predictive words
+                update_trie(trie, predictive_words)
+                
+                # Save the updated trie back to the .pkl file
+                save_trie(trie, trie_file_path)
+                
+                # Update the counts in scores.pkl for the context words slug
+                update_scores(scores_file_path, context_slug)
+        except csv.Error as e:
+            print(f"Error processing row: {e}")
+            # Optionally, log the error or take other actions
+            continue  # Skip to the next row
   
   print("\nFinal pruning...")
   prune_unpopular(scores_file_path, dictionaries_path)
