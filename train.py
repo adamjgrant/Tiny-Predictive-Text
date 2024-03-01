@@ -88,7 +88,7 @@ def main():
             iteration_count += 1
 
             # Every now and then, prune unpopular entries.
-            if iteration_count % (target_dictionary_count / 0.8) == 0:
+            if iteration_count % 5000 == 0:
               prune_unpopular(scores_file_path, dictionaries_path, top_n=target_dictionary_count)
 
             # Determine predictive words, up to three or until a punctuation mark
@@ -127,7 +127,7 @@ def prune_unpopular(scores_file_path, dictionaries_path, top_n=8000):
         print("Scores file does not exist.")
         return
 
-    print("\nStopping to prune 20% least popular entries...")
+    printf("\nStopping to prune least popular entries down to target dictionary size of %s...") % top_n
 
     # Sort scores by value in descending order and get the top_n keys
     top_slugs = sorted(scores, key=scores.get, reverse=True)[:top_n]
