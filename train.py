@@ -76,6 +76,7 @@ def main():
 
   # Read the CSV file and process the training data
   # Open the CSV file
+  csv.field_size_limit(sys.maxsize)
   with open(training_data_file, 'r', newline='', encoding='utf-8') as csvfile:
     reader = csv.reader(csvfile)
     # Wrap reader in tqdm for a progress bar. Note: No total count provided.

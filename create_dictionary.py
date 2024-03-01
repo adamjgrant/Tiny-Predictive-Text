@@ -46,7 +46,9 @@ def main():
     print(f"Dictionary length is %s" % dictionary.keys().__len__())
     # Write the dictionary object to dictionary.js in the desired format
     with open(output_file, 'w') as js_file:
-        js_content = f"const dictionary = {json.dumps(dictionary, indent=2)}\n\nexports.dictionary = dictionary;"
+        # Minimize by removing unnecessary whitespace in json.dumps and adjusting js_content formatting
+        minimized_json = json.dumps(dictionary, separators=(',', ':'))
+        js_content = f"const dictionary={minimized_json};\nexports.dictionary=dictionary;"
         js_file.write(js_content)
 
 if __name__ == "__main__":
