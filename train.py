@@ -49,6 +49,9 @@ def update_scores(scores_file_path, context_slug):
 
 # Define a main function to orchestrate the training process
 def main():
+  # We'll try to create this many dictionaries by frequently pruning 20% of the least popular entries.
+  target_dictionary_count = 10000 
+
   # Parse command line arguments to get the name of the training data file
   if len(sys.argv) < 2:
         print("Usage: python train.py <name of training data>.csv")
@@ -84,9 +87,9 @@ def main():
             predictive_words = []
             iteration_count += 1
 
-            # Every 10,000th iteration, call prune_unpopular
-            if iteration_count % 10000 == 0:
-              prune_unpopular(scores_file_path, dictionaries_path)
+            # Every now and then, prune unpopular entries.
+            if iteration_count % (target_dictionary_count / 0.8) == 0:
+              prune_unpopular(scores_file_path, dictionaries_path, top_n=target_dictionary_count)
 
             # Determine predictive words, up to three or until a punctuation mark
             for j in range(i + 3, min(i + 6, len(words))):
@@ -111,6 +114,9 @@ def main():
             
             # Update the counts in scores.pkl for the context words slug
             update_scores(scores_file_path, context_slug)
+  
+  print("\nFinal pruning...")
+  prune_unpopular(scores_file_path, dictionaries_path, top_n=target_dictionary_count)
 
 def prune_unpopular(scores_file_path, dictionaries_path, top_n=8000):
     # Load the scores
@@ -120,6 +126,8 @@ def prune_unpopular(scores_file_path, dictionaries_path, top_n=8000):
     else:
         print("Scores file does not exist.")
         return
+
+    print("\nStopping to prune 20% least popular entries...")
 
     # Sort scores by value in descending order and get the top_n keys
     top_slugs = sorted(scores, key=scores.get, reverse=True)[:top_n]
