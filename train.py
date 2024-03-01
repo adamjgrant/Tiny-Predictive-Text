@@ -81,6 +81,7 @@ def main():
     iteration_count = 0 # Now and then we'll prune unpopular entries.
     for row in tqdm(reader, desc="Processing CSV rows"):
         words = ' '.join(row).split()
+        print(f"Row: %s" % row)
         # Process words three at a time with shifting window
         for i in range(len(words) - 2):
             context_words = words[i:i+3]
@@ -127,7 +128,7 @@ def prune_unpopular(scores_file_path, dictionaries_path, top_n=8000):
         print("Scores file does not exist.")
         return
 
-    printf("\nStopping to prune least popular entries down to target dictionary size of %s...") % top_n
+    print(f"\nStopping to prune least popular entries down to target dictionary size of %s..." % top_n) 
 
     # Sort scores by value in descending order and get the top_n keys
     top_slugs = sorted(scores, key=scores.get, reverse=True)[:top_n]
