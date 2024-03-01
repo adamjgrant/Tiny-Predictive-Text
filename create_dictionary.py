@@ -48,7 +48,7 @@ def main():
     with open(output_file, 'w') as js_file:
         # Minimize by removing unnecessary whitespace in json.dumps and adjusting js_content formatting
         minimized_json = json.dumps(dictionary, separators=(',', ':'))
-        js_content = f"const dictionary={minimized_json};\nexports.dictionary=dictionary;"
+        js_content = f"export const dictionary = {minimized_json};"
         js_file.write(js_content)
 
 if __name__ == "__main__":
