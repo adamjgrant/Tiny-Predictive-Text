@@ -6,6 +6,7 @@ import re
 from collections import defaultdict
 import csv
 import shutil
+from tqdm import tqdm
 
 # Define a function to slugify context words into a filename-safe string
 def slugify(text):
@@ -77,36 +78,37 @@ def main():
   # Read the CSV file and process the training data
   # Open the CSV file
   with open(training_data_file, 'r', newline='', encoding='utf-8') as csvfile:
-      reader = csv.reader(csvfile)
-      for row in reader:
-          words = ' '.join(row).split()
-          # Process words three at a time with shifting window
-          for i in range(len(words) - 2):
-              context_words = words[i:i+3]
-              predictive_words = []
-              # Determine predictive words, up to three or until a punctuation mark
-              for j in range(i + 3, min(i + 6, len(words))):
-                  if words[j] in ['.', ',', '\n', '\r', '\r\n']:
-                      break
-                  predictive_words.append(words[j])
-              if not predictive_words:  # Skip if there are no predictive words
-                  continue
+    reader = csv.reader(csvfile)
+    # Wrap reader in tqdm for a progress bar. Note: No total count provided.
+    for row in tqdm(reader, desc="Processing CSV rows"):
+        words = ' '.join(row).split()
+        # Process words three at a time with shifting window
+        for i in range(len(words) - 2):
+            context_words = words[i:i+3]
+            predictive_words = []
+            # Determine predictive words, up to three or until a punctuation mark
+            for j in range(i + 3, min(i + 6, len(words))):
+                if words[j] in ['.', ',', '\n', '\r', '\r\n']:
+                    break
+                predictive_words.append(words[j])
+            if not predictive_words:  # Skip if there are no predictive words
+                continue
               
-              # Slugify the context words
-              context_slug = slugify('_'.join(context_words))
-              
-              # Load or initialize the trie for the context words from its .pkl file
-              trie_file_path = os.path.join('training/dictionaries', f'{context_slug}.pkl')
-              trie = load_trie(trie_file_path)
-              
-              # Update the trie with the predictive words
-              update_trie(trie, predictive_words)
-              
-              # Save the updated trie back to the .pkl file
-              save_trie(trie, trie_file_path)
-              
-              # Update the counts in scores.pkl for the context words slug
-              update_scores(scores_file_path, context_slug)
+            # Slugify the context words
+            context_slug = slugify('_'.join(context_words))
+            
+            # Load or initialize the trie for the context words from its .pkl file
+            trie_file_path = os.path.join('training/dictionaries', f'{context_slug}.pkl')
+            trie = load_trie(trie_file_path)
+            
+            # Update the trie with the predictive words
+            update_trie(trie, predictive_words)
+            
+            # Save the updated trie back to the .pkl file
+            save_trie(trie, trie_file_path)
+            
+            # Update the counts in scores.pkl for the context words slug
+            update_scores(scores_file_path, context_slug)
 
 # Check if the script is being run directly and call the main function
 if __name__ == "__main__":
