@@ -7,16 +7,17 @@ from train import prune_unpopular
 
 def convert_to_array(obj):
     """
-    Recursively converts dictionary objects to the specified array format.
+    Recursively converts dictionary objects to the specified array format, ensuring each string ends with a space.
     """
     result = []
     for key, value in obj.items():
+        key_with_space = key + " "  # Append a space to the key
         if isinstance(value, dict):
             # If the value is a dictionary, recursively process it
             child = convert_to_array(value)
-            result.append([key, child])
+            result.append([key_with_space, child])
         else:
-            result.append(key)
+            result.append(key_with_space)
     return result
 
 def main():
