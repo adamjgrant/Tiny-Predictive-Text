@@ -7,17 +7,11 @@ from collections import defaultdict
 import csv
 import shutil
 from tqdm import tqdm
+from slugify import slugify
 
 # Define a function to slugify context words into a filename-safe string
-def slugify(text):
-    # Trim leading and trailing whitespace
-    text = text.strip()
-    # Replace all non-alphanumeric characters (except spaces) with nothing
-    text = re.sub(r'[^\w\s]', '', text)
-    # Replace all spaces with a single underscore
-    text = re.sub(r'\s+', '_', text)
-    # Convert to lowercase
-    return text.lower()
+def _slugify(text):
+    return slugify(text, separator="_")
 
 # Define a function to update the trie structure with predictive words
 def update_trie(trie, predictive_words):
@@ -69,7 +63,8 @@ def main():
       print("Previous training data cleared.")
   
   # Ensure the 'training' directory and its subdirectories/files exist
-  os.makedirs('training/dictionaries', exist_ok=True)
+  dictionaries_path = 'training/dictionaries'
+  os.makedirs(dictionaries_path, exist_ok=True)
   scores_file_path = 'training/scores.pkl'
   if not os.path.exists(scores_file_path):
       with open(scores_file_path, 'wb') as scores_file:
@@ -80,12 +75,19 @@ def main():
   with open(training_data_file, 'r', newline='', encoding='utf-8') as csvfile:
     reader = csv.reader(csvfile)
     # Wrap reader in tqdm for a progress bar. Note: No total count provided.
+    iteration_count = 0 # Now and then we'll prune unpopular entries.
     for row in tqdm(reader, desc="Processing CSV rows"):
         words = ' '.join(row).split()
         # Process words three at a time with shifting window
         for i in range(len(words) - 2):
             context_words = words[i:i+3]
             predictive_words = []
+            iteration_count += 1
+
+            # Every 10,000th iteration, call prune_unpopular
+            if iteration_count % 10000 == 0:
+              prune_unpopular(scores_file_path, dictionaries_path)
+
             # Determine predictive words, up to three or until a punctuation mark
             for j in range(i + 3, min(i + 6, len(words))):
                 if words[j] in ['.', ',', '\n', '\r', '\r\n']:
@@ -95,7 +97,7 @@ def main():
                 continue
               
             # Slugify the context words
-            context_slug = slugify('_'.join(context_words))
+            context_slug = _slugify('_'.join(context_words))
             
             # Load or initialize the trie for the context words from its .pkl file
             trie_file_path = os.path.join('training/dictionaries', f'{context_slug}.pkl')
@@ -109,6 +111,28 @@ def main():
             
             # Update the counts in scores.pkl for the context words slug
             update_scores(scores_file_path, context_slug)
+
+def prune_unpopular(scores_file_path, dictionaries_path, top_n=8000):
+    # Load the scores
+    if os.path.exists(scores_file_path):
+        with open(scores_file_path, 'rb') as file:
+            scores = pickle.load(file)
+    else:
+        print("Scores file does not exist.")
+        return
+
+    # Sort scores by value in descending order and get the top_n keys
+    top_slugs = sorted(scores, key=scores.get, reverse=True)[:top_n]
+
+    # Convert to set for faster lookup
+    top_slugs_set = set(top_slugs)
+
+    # Iterate over all files in dictionaries directory
+    for filename in os.listdir(dictionaries_path):
+        slug, ext = os.path.splitext(filename)
+        if slug not in top_slugs_set:
+            # This file is not among the top scoring, so delete it
+            os.remove(os.path.join(dictionaries_path, filename))
 
 # Check if the script is being run directly and call the main function
 if __name__ == "__main__":
