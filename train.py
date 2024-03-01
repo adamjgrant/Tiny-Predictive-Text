@@ -47,10 +47,11 @@ def update_scores(scores_file_path, context_slug):
     with open(scores_file_path, 'wb') as file:
         pickle.dump(scores, file, protocol=pickle.HIGHEST_PROTOCOL)
 
+target_dictionary_count = 10000 
+
 # Define a main function to orchestrate the training process
 def main():
   # We'll try to create this many dictionaries by frequently pruning 20% of the least popular entries.
-  target_dictionary_count = 10000 
 
   # Parse command line arguments to get the name of the training data file
   if len(sys.argv) < 2:
@@ -90,7 +91,7 @@ def main():
 
             # Every now and then, prune unpopular entries.
             if iteration_count % 5000 == 0:
-              prune_unpopular(scores_file_path, dictionaries_path, top_n=target_dictionary_count)
+              prune_unpopular(scores_file_path, dictionaries_path)
 
             # Determine predictive words, up to three or until a punctuation mark
             for j in range(i + 3, min(i + 6, len(words))):
@@ -117,9 +118,9 @@ def main():
             update_scores(scores_file_path, context_slug)
   
   print("\nFinal pruning...")
-  prune_unpopular(scores_file_path, dictionaries_path, top_n=target_dictionary_count)
+  prune_unpopular(scores_file_path, dictionaries_path)
 
-def prune_unpopular(scores_file_path, dictionaries_path, top_n=8000):
+def prune_unpopular(scores_file_path, dictionaries_path):
     # Load the scores
     if os.path.exists(scores_file_path):
         with open(scores_file_path, 'rb') as file:
@@ -128,10 +129,10 @@ def prune_unpopular(scores_file_path, dictionaries_path, top_n=8000):
         print("Scores file does not exist.")
         return
 
-    print(f"\nStopping to prune least popular entries down to target dictionary size of %s..." % top_n) 
+    print(f"\nStopping to prune least popular entries down to target dictionary size of %s..." % target_dictionary_count) 
 
     # Sort scores by value in descending order and get the top_n keys
-    top_slugs = sorted(scores, key=scores.get, reverse=True)[:top_n]
+    top_slugs = sorted(scores, key=scores.get, reverse=True)[:target_dictionary_count]
 
     # Convert to set for faster lookup
     top_slugs_set = set(top_slugs)

@@ -32,6 +32,7 @@ def main():
     dictionary = {}
 
     # Iterate over every .pkl file in the dictionaries directory
+    print("Getting all dictionaries...")
     for filename in os.listdir(dictionaries_path):
         if filename.endswith('.pkl'):
             slug, _ = os.path.splitext(filename)
@@ -42,6 +43,7 @@ def main():
                 # Convert trie to the specified array format
                 dictionary[slug] = convert_to_array(trie)
 
+    print(f"Dictionary length is %s" % dictionary.keys().__len__())
     # Write the dictionary object to dictionary.js in the desired format
     with open(output_file, 'w') as js_file:
         js_content = f"const dictionary = {json.dumps(dictionary, indent=2)}\n\nexports.dictionary = dictionary;"
