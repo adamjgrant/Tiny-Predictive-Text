@@ -135,12 +135,21 @@ def prune_unpopular(scores_file_path, dictionaries_path, top_n=8000):
     # Convert to set for faster lookup
     top_slugs_set = set(top_slugs)
 
+    # Track slugs to be removed from scores
+    slugs_to_remove = []
+
     # Iterate over all files in dictionaries directory
     for filename in os.listdir(dictionaries_path):
         slug, ext = os.path.splitext(filename)
         if slug not in top_slugs_set:
             # This file is not among the top scoring, so delete it
             os.remove(os.path.join(dictionaries_path, filename))
+            slugs_to_remove.append(slug)
+
+    # Remove the pruned entries from scores
+    for slug in slugs_to_remove:
+        if slug in scores:
+            del scores[slug]
 
 # Check if the script is being run directly and call the main function
 if __name__ == "__main__":
