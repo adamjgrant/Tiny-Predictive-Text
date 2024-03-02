@@ -6,6 +6,6 @@ A demonstration of predictive text without an LLM, using permy.link
 ## Training
 `pip install tqdm`
 `pip install python-slugify`
-[Training data is here](https://www.kaggle.com/datasets/thedevastator/text-and-meta-data-analysis).
-Save it in the root as `train.csv`.
-Run the training with `python train.py train.csv`.
+[Training data is here](https://cdn.everything.io/datasets/blogs-news-twitter.txt.zip)
+Save it in the root as `train.txt`.
+Run the training with `python train.py train.txt`.

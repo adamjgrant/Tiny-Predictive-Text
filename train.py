@@ -4,10 +4,12 @@ import sys
 import pickle
 import re
 from collections import defaultdict
-import csv
 import shutil
 from tqdm import tqdm
 from slugify import slugify
+
+PRUNE_FREQUENCY = 50000
+TARGET_DICTIONARY_COUNT = 10000 
 
 # Define a function to slugify context words into a filename-safe string
 def _slugify(text):
@@ -47,15 +49,13 @@ def update_scores(scores_file_path, context_slug):
     with open(scores_file_path, 'wb') as file:
         pickle.dump(scores, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-target_dictionary_count = 10000 
-
 # Define a main function to orchestrate the training process
 def main():
   # We'll try to create this many dictionaries by frequently pruning 20% of the least popular entries.
 
   # Parse command line arguments to get the name of the training data file
   if len(sys.argv) < 2:
-        print("Usage: python train.py <name of training data>.csv")
+        print("Usage: python train.py <name of training data>.txt")
         sys.exit(1)
   training_data_file = sys.argv[1]
   retain_data = '--retain' in sys.argv
@@ -74,53 +74,58 @@ def main():
       with open(scores_file_path, 'wb') as scores_file:
           pickle.dump({}, scores_file, protocol=pickle.HIGHEST_PROTOCOL)
 
-  # Read the CSV file and process the training data
-  # Open the CSV file
-  csv.field_size_limit(sys.maxsize)
-  with open(training_data_file, 'r', newline='', encoding='utf-8') as csvfile:
-    reader = csv.reader(csvfile)
-    # Wrap reader in tqdm for a progress bar. Note: No total count provided.
-    iteration_count = 0 # Now and then we'll prune unpopular entries.
-    for row in tqdm(reader, desc="Processing CSV rows"):
-        try:
-            words = ' '.join(row).split()
-            # Process words three at a time with shifting window
-            for i in range(len(words) - 2):
-                context_words = words[i:i+3]
-                predictive_words = []
-                iteration_count += 1
+  # Read the TXT file and process the training data
+  chunk_size = 1024 * 1024  # 1MB per chunk
 
-                # Every now and then, prune unpopular entries.
-                if iteration_count % 100000 == 0:
-                  prune_unpopular(scores_file_path, dictionaries_path)
+  # Get the total size of the file to calculate the number of iterations needed
+  total_size = os.path.getsize(training_data_file)
+  total_iterations = total_size // chunk_size + (1 if total_size % chunk_size > 0 else 0)
 
-                # Determine predictive words, up to three or until a punctuation mark
-                for j in range(i + 3, min(i + 6, len(words))):
-                    if words[j] in ['.', ',', '\n', '\r', '\r\n']:
-                        break
-                    predictive_words.append(words[j])
-                if not predictive_words:  # Skip if there are no predictive words
-                    continue
+  # Open the file and process it in chunks with tqdm progress bar
+  with open(training_data_file, 'r') as file:
+      iteration_count = 0  # Now and then we'll prune unpopular entries.
+      with tqdm(total=total_iterations, unit='chunk', desc="Processing file") as pbar:
+          while True:
+              row = file.read(chunk_size)
+              if not row:
+                  break
+              iteration_count += 1
+              pbar.update(1)
+
+              words = row.split()
+              # Process words three at a time with shifting window
+              for i in range(len(words) - 2):
+                  context_words = words[i:i+3]
+                  predictive_words = []
+                  iteration_count += 1
+
+                  # Every now and then, prune unpopular entries.
+                  if iteration_count % PRUNE_FREQUENCY == 0:
+                    prune_unpopular(scores_file_path, dictionaries_path)
+
+                  # Determine predictive words, up to three or until a punctuation mark
+                  for j in range(i + 3, min(i + 6, len(words))):
+                      if words[j] in ['.', ',', '\n', '\r', '\r\n']:
+                          break
+                      predictive_words.append(words[j])
+                  if not predictive_words:  # Skip if there are no predictive words
+                      continue
+                    
+                  # Slugify the context words
+                  context_slug = _slugify('_'.join(context_words))
                   
-                # Slugify the context words
-                context_slug = _slugify('_'.join(context_words))
-                
-                # Load or initialize the trie for the context words from its .pkl file
-                trie_file_path = os.path.join('training/dictionaries', f'{context_slug}.pkl')
-                trie = load_trie(trie_file_path)
-                
-                # Update the trie with the predictive words
-                update_trie(trie, predictive_words)
-                
-                # Save the updated trie back to the .pkl file
-                save_trie(trie, trie_file_path)
-                
-                # Update the counts in scores.pkl for the context words slug
-                update_scores(scores_file_path, context_slug)
-        except csv.Error as e:
-            print(f"Error processing row: {e}")
-            # Optionally, log the error or take other actions
-            continue  # Skip to the next row
+                  # Load or initialize the trie for the context words from its .pkl file
+                  trie_file_path = os.path.join('training/dictionaries', f'{context_slug}.pkl')
+                  trie = load_trie(trie_file_path)
+                  
+                  # Update the trie with the predictive words
+                  update_trie(trie, predictive_words)
+                  
+                  # Save the updated trie back to the .pkl file
+                  save_trie(trie, trie_file_path)
+                  
+                  # Update the counts in scores.pkl for the context words slug
+                  update_scores(scores_file_path, context_slug)
   
   print("\nFinal pruning...")
   prune_unpopular(scores_file_path, dictionaries_path)
@@ -134,10 +139,10 @@ def prune_unpopular(scores_file_path, dictionaries_path):
         print("Scores file does not exist.")
         return
 
-    print(f"\nStopping to prune least popular entries down to target dictionary size of %s..." % target_dictionary_count) 
+    print(f"\nStopping to prune least popular entries down to target dictionary size of %s..." % TARGET_DICTIONARY_COUNT) 
 
     # Sort scores by value in descending order and get the top_n keys
-    top_slugs = sorted(scores, key=scores.get, reverse=True)[:target_dictionary_count]
+    top_slugs = sorted(scores, key=scores.get, reverse=True)[:TARGET_DICTIONARY_COUNT]
 
     # Convert to set for faster lookup
     top_slugs_set = set(top_slugs)
