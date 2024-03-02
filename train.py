@@ -134,16 +134,15 @@ def main():
               with open(progress_file, 'w') as f:
                   f.write(str(current_position))
 
-              # Every now and then, prune unpopular entries.
-              if iteration_count % PRUNE_FREQUENCY == 0:
-                flatten_to_dictionary()
-              
               # Process words three at a time with shifting window
               for i in range(len(words) - 2):
                   context_words = words[i:i+3]
                   predictive_words = []
                   iteration_count += 1
-                  # Note: Removed iteration_count increment here as it seems redundant and potentially incorrect
+
+                  # Every now and then, prune unpopular entries.
+                  if iteration_count % PRUNE_FREQUENCY == 0:
+                    flatten_to_dictionary()
 
                   # Determine predictive words, up to three or until one ends with a punctuation mark
                   for j in range(i + 3, min(i + 6, len(words))):

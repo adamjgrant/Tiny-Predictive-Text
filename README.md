@@ -12,3 +12,5 @@ No GPUs OS requirements or nVidia libraries needed. I run this on my Macbook Pro
 - [Download training data](https://cdn.everything.io/datasets/blogs-news-twitter.txt.zip)
 - Save it in the root as `train.txt`.
 - Run the training with `python train.py train.txt`. Every once in a while it will optimize by pruning word set dictionaries and branches recursively. At this point (look for it in the logs) it will create the dictionary.js file the demo needs to run. Let it keep running and it will continuously improve that dictionary as it continues its training.
+
+Tip: Run it again anytime with the `--retain` flag to pick up where you left off.
