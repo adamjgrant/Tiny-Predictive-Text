@@ -20,6 +20,17 @@ def update_trie(trie, predictive_words):
     for word in predictive_words:
         if word not in trie:
             trie[word] = {}
+            # Ensure the '\ranked' key exists with a default list if not already present
+            if '\ranked' not in trie:
+                trie['\ranked'] = []
+            # Add the word to '\ranked' if it's not already in the list
+            if word not in trie['\ranked']:
+                trie['\ranked'].append(word)
+            else:
+                # Promote the word by one position if it's not already at the start
+                index = trie['\ranked'].index(word)
+                if index > 0:
+                    trie['\ranked'].insert(max(0, index - 1), trie['\ranked'].pop(index))
         trie = trie[word]
 
 # Define a function to load or initialize the trie from a .pkl file
