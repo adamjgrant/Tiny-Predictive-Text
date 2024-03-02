@@ -85,15 +85,17 @@ const get_suggestion = (word) => {
 };
 
 const use_suggestion = (event=undefined) => {
-  if (event.keyCode === 9) {
-    event.preventDefault();
-    const space = entry.value.split("").reverse()[0] === " " ? "" : " ";
-    entry.value = entry.value + space + suggested_text_on_deck;
-    clear_suggestion();
-  }
+  const space = entry.value.split("").reverse()[0] === " " ? "" : " ";
+  entry.value = entry.value + space + suggested_text_on_deck;
+  clear_suggestion();
 }
 
-entry.addEventListener("keydown", use_suggestion);
+entry.addEventListener("keydown", (event) => {
+  if (event.keyCode === 9) {
+    event.preventDefault();
+    use_suggestion();
+  }
+});
 suggestion.addEventListener("click", use_suggestion);
 
 const find_a_suggestion = (word) => {
