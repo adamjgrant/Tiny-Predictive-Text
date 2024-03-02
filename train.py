@@ -69,10 +69,15 @@ def main():
   # Ensure the 'training' directory and its subdirectories/files exist
   dictionaries_path = 'training/dictionaries'
   os.makedirs(dictionaries_path, exist_ok=True)
-  scores_file_path = 'training/scores.pkl'
-  if not os.path.exists(scores_file_path):
-      with open(scores_file_path, 'wb') as scores_file:
-          pickle.dump({}, scores_file, protocol=pickle.HIGHEST_PROTOCOL)
+  scores_3_words_file_path = 'training/scores_3_words.pkl'
+  scores_2_words_file_path = 'training/scores_2_words.pkl'
+  scores_1_word_file_path = 'training/scores_1_word.pkl'
+
+  # Set each score file with an empty object if they don't exist.
+  for path in [scores_1_word_file_path, scores_2_words_file_path, scores_3_words_file_path]:
+    if not os.path.exists(path):
+        with open(path, 'wb') as scores_file:
+            pickle.dump({}, scores_file, protocol=pickle.HIGHEST_PROTOCOL)
 
   # Read the TXT file and process the training data
   chunk_size = 1024 * 1024  # 1MB per chunk
@@ -101,7 +106,9 @@ def main():
 
                   # Every now and then, prune unpopular entries.
                   if iteration_count % PRUNE_FREQUENCY == 0:
-                    prune_unpopular(scores_file_path, dictionaries_path)
+                    prune_unpopular(scores_3_words_file_path, dictionaries_path)
+                    prune_unpopular(scores_2_words_file_path, dictionaries_path)
+                    prune_unpopular(scores_1_word_file_path, dictionaries_path)
 
                   # Determine predictive words, up to three or until a punctuation mark
                   for j in range(i + 3, min(i + 6, len(words))):
@@ -111,26 +118,38 @@ def main():
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
                     
-                  # Slugify the context words
-                  context_slug = _slugify('_'.join(context_words))
-                  
-                  # Load or initialize the trie for the context words from its .pkl file
-                  trie_file_path = os.path.join('training/dictionaries', f'{context_slug}.pkl')
-                  trie = load_trie(trie_file_path)
-                  
-                  # Update the trie with the predictive words
-                  update_trie(trie, predictive_words)
-                  
-                  # Save the updated trie back to the .pkl file
-                  save_trie(trie, trie_file_path)
-                  
-                  # Update the counts in scores.pkl for the context words slug
-                  update_scores(scores_file_path, context_slug)
+                  finish_filing(context_words, predictive_words, scores_3_words_file_path)
+
+                  ## Two word alternative
+                  context_words_2 = words[i+1:i+3]
+                  predictive_words_2 = predictive_words[:2]
+                  finish_filing(context_words_2, predictive_words_2, scores_2_words_file_path)
+
+                  ## Three word alternative
+                  context_words_1 = words[i+2:i+3]
+                  finish_filing(context_words_1, predictive_words_2, scores_1_word_file_path)
   
   print("\nFinal pruning...")
-  prune_unpopular(scores_file_path, dictionaries_path)
+  prune_unpopular(scores_3_words_file_path, dictionaries_path)
 
-def prune_unpopular(scores_file_path, dictionaries_path):
+def finish_filing(context_words, predictive_words, scores_file_path):
+    # Slugify the context words
+    context_slug = _slugify('_'.join(context_words))
+    
+    # Load or initialize the trie for the context words from its .pkl file
+    trie_file_path = os.path.join('training/dictionaries', f'{context_slug}.pkl')
+    trie = load_trie(trie_file_path)
+    
+    # Update the trie with the predictive words
+    update_trie(trie, predictive_words)
+    
+    # Save the updated trie back to the .pkl file
+    save_trie(trie, trie_file_path)
+    
+    # Update the counts in scores_3_word.pkl for the context words slug
+    update_scores(scores_file_path, context_slug) 
+
+def prune_unpopular(scores_file_path, dictionaries_path, target_dictionary_count=TARGET_DICTIONARY_COUNT):
     # Load the scores
     if os.path.exists(scores_file_path):
         with open(scores_file_path, 'rb') as file:
@@ -139,10 +158,10 @@ def prune_unpopular(scores_file_path, dictionaries_path):
         print("Scores file does not exist.")
         return
 
-    print(f"\nStopping to prune least popular entries down to target dictionary size of %s..." % TARGET_DICTIONARY_COUNT) 
+    print(f"\nStopping to prune least popular entries down to target dictionary size of %s..." % target_dictionary_count) 
 
     # Sort scores by value in descending order and get the top_n keys
-    top_slugs = sorted(scores, key=scores.get, reverse=True)[:TARGET_DICTIONARY_COUNT]
+    top_slugs = sorted(scores, key=scores.get, reverse=True)[:target_dictionary_count]
 
     # Convert to set for faster lookup
     top_slugs_set = set(top_slugs)

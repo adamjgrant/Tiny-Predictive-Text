@@ -23,11 +23,15 @@ def convert_to_array(obj):
 def main():
     # Path configuration
     dictionaries_path = 'training/dictionaries'
-    scores_file_path = 'training/scores.pkl'
+    scores_3_words_file_path = 'training/scores_3_words.pkl'
+    scores_2_words_file_path = 'training/scores_2_words.pkl'
+    scores_1_word_file_path = 'training/scores_1_word.pkl'
     output_file = 'dictionary.js'
 
     # Prune the dictionaries first
-    prune_unpopular(scores_file_path, dictionaries_path)
+    prune_unpopular(scores_3_words_file_path, dictionaries_path)
+    prune_unpopular(scores_2_words_file_path, dictionaries_path, target_dictionary_count=5000)
+    prune_unpopular(scores_1_word_file_path, dictionaries_path, target_dictionary_count=1000)
 
     # Initialize the dictionary object
     dictionary = {}
