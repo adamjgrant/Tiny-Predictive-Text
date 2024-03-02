@@ -77,7 +77,9 @@ const clear_suggestion = () => {
 
 const get_suggestion = (word) => {
   let new_tree = dictionary[word];
-  if (!new_tree) return "";
+  if (!new_tree) { 
+    return ""; 
+  }
   let permute = new Tree({ "main": new_tree });
   return permute.one;
 };
@@ -95,12 +97,11 @@ const find_a_suggestion = (word) => {
   let word_parts = word.split("_");
   let suggested_word;
   word = word_parts.join("_")
-  console.log(word)
   suggested_word = get_suggestion(word);
   if (suggested_word !== "") return suggested_word
   word_parts.shift();
   if (!word_parts.length) return false;
-  find_a_suggestion(word_parts.join("_"))
+  return find_a_suggestion(word_parts.join("_"))
 }
 
 entry.addEventListener("keyup", () => {
