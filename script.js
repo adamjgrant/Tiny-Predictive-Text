@@ -84,14 +84,19 @@ const get_suggestion = (word) => {
   return permute.one;
 };
 
+const use_suggestion = (event=undefined) => {
+  const space = entry.value.split("").reverse()[0] === " " ? "" : " ";
+  entry.value = entry.value + space + suggested_text_on_deck;
+  clear_suggestion();
+}
+
 entry.addEventListener("keydown", (event) => {
   if (event.keyCode === 9) {
     event.preventDefault();
-    const space = entry.value.split("").reverse()[0] === " " ? "" : " ";
-    entry.value = entry.value + space + suggested_text_on_deck;
-    clear_suggestion();
+    use_suggestion();
   }
 });
+suggestion.addEventListener("click", use_suggestion);
 
 const find_a_suggestion = (word) => {
   let word_parts = word.split("_");

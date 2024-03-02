@@ -6,6 +6,7 @@ textarea {
 }
 
 #suggestion {
+  cursor: pointer;
   color: white;
   font-style: italic;
   border-radius: 5px;
