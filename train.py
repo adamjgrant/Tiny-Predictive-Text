@@ -11,11 +11,14 @@ import string
 from create_dictionary import main as flatten_to_dictionary
 import signal
 
-PRUNE_FREQUENCY = 25000
+PRUNE_FREQUENCY = 250000 # Every this many document positions
 CHUNK_SIZE = 1024 # 1KB per chunk
 
 # Define a flag to indicate when an interrupt has been caught
 interrupted = False
+
+# Used to calculate PRUNE_FREQUENCY against the current position
+prune_position_marker = 0
 
 def signal_handler(sig, frame):
     global interrupted
@@ -79,7 +82,7 @@ def update_scores(scores_file_path, context_slug):
 
 # Define a main function to orchestrate the training process
 def main():
-  # We'll try to create this many dictionaries by frequently pruning 20% of the least popular entries.
+  global prune_position_marker
 
   # Parse command line arguments to get the name of the training data file
   if len(sys.argv) < 2:
@@ -130,7 +133,6 @@ def main():
   with open(training_data_file, 'r') as file:
       # Skip to the last processed position, if any
       file.seek(last_processed_position)
-      iteration_count = 0
 
       with tqdm(initial=last_processed_position // CHUNK_SIZE, total=total_iterations, unit='chunk', desc="Processing file") as pbar:
           while True:
@@ -157,10 +159,11 @@ def main():
               for i in range(len(words) - 2):
                   context_words = words[i:i+3]
                   predictive_words = []
-                  iteration_count += 1
 
                   # Every now and then, prune unpopular entries.
-                  if iteration_count % PRUNE_FREQUENCY == 0:
+                  if (current_position - prune_position_marker > PRUNE_FREQUENCY):
+                    prune_position_marker = current_position
+                    print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
                     flatten_to_dictionary()
 
                   # Determine predictive words, up to three or until one ends with a punctuation mark
