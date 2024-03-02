@@ -81,6 +81,9 @@ def main():
   # Ensure the 'training' directory and its subdirectories/files exist
   dictionaries_path = 'training/dictionaries'
   os.makedirs(dictionaries_path, exist_ok=True)
+  os.makedirs(os.path.join(dictionaries_path, "3_words"), exist_ok=True)
+  os.makedirs(os.path.join(dictionaries_path, "2_words"), exist_ok=True)
+  os.makedirs(os.path.join(dictionaries_path, "1_word"), exist_ok=True)
   scores_3_words_file_path = 'training/scores_3_words.pkl'
   scores_2_words_file_path = 'training/scores_2_words.pkl'
   scores_1_word_file_path = 'training/scores_1_word.pkl'
@@ -92,33 +95,55 @@ def main():
             pickle.dump({}, scores_file, protocol=pickle.HIGHEST_PROTOCOL)
 
   # Read the TXT file and process the training data
-  chunk_size = 1024 * 1024  # 1MB per chunk
+  chunk_size = 1024  * 16 # 16KB per chunk
 
   # Get the total size of the file to calculate the number of iterations needed
   total_size = os.path.getsize(training_data_file)
   total_iterations = total_size // chunk_size + (1 if total_size % chunk_size > 0 else 0)
 
+  # Define a file to store the progress
+  progress_file = 'training/processing_progress.txt'
+
+  # Check if progress file exists and read the last processed byte position
+  if os.path.exists(progress_file):
+      with open(progress_file, 'r') as f:
+          last_processed_position = int(f.read().strip())
+  else:
+      last_processed_position = 0
+
   # Open the file and process it in chunks with tqdm progress bar
   with open(training_data_file, 'r') as file:
-      iteration_count = 0  # Now and then we'll prune unpopular entries.
-      with tqdm(total=total_iterations, unit='chunk', desc="Processing file") as pbar:
+      # Skip to the last processed position, if any
+      file.seek(last_processed_position)
+      iteration_count = 0
+
+      with tqdm(initial=last_processed_position // chunk_size, total=total_iterations, unit='chunk', desc="Processing file") as pbar:
           while True:
+              current_position = file.tell()
               row = file.read(chunk_size)
               if not row:
                   break
-              iteration_count += 1
+              
               pbar.update(1)
 
               words = row.split()
+
+              # Every now and then save our progress.
+              print(f"Saving the current position of %s" % current_position)
+              # Save the current progress (file position)
+              with open(progress_file, 'w') as f:
+                  f.write(str(current_position))
+
+              # Every now and then, prune unpopular entries.
+              if iteration_count % PRUNE_FREQUENCY == 0:
+                flatten_to_dictionary()
+              
               # Process words three at a time with shifting window
               for i in range(len(words) - 2):
                   context_words = words[i:i+3]
                   predictive_words = []
                   iteration_count += 1
-
-                  # Every now and then, prune unpopular entries.
-                  if iteration_count % PRUNE_FREQUENCY == 0:
-                    flatten_to_dictionary()
+                  # Note: Removed iteration_count increment here as it seems redundant and potentially incorrect
 
                   # Determine predictive words, up to three or until one ends with a punctuation mark
                   for j in range(i + 3, min(i + 6, len(words))):
