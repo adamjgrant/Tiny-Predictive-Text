@@ -101,10 +101,10 @@ entry.addEventListener("keydown", (event) => {
 suggestion.addEventListener("click", () => {
   use_suggestion();
   entry.focus();
+  check_for_suggestion();
 });
 
 const set_suggested_word_class = (word_parts) => {
-  console.log(word_parts);
   suggestion.classList.remove("two_word");
   suggestion.classList.remove("three_word");
   if (word_parts.length > 2) return suggestion.classList.add("three_word");
@@ -125,7 +125,7 @@ const find_a_suggestion = (word_parts) => {
   return find_a_suggestion(word_parts)
 }
 
-entry.addEventListener("keyup", () => {
+const check_for_suggestion = () => {
   let word = get_word();
   if (word === "") return clear_suggestion();
 
@@ -136,4 +136,6 @@ entry.addEventListener("keyup", () => {
   }
   suggested_text_on_deck = suggested_word;
   suggestion.innerHTML = suggested_word;
-});
+}
+
+entry.addEventListener("keyup", check_for_suggestion);

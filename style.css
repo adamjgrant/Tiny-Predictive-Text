@@ -1,6 +1,7 @@
 textarea {
   display: block;
-  width: 500px;
+  width: calc(100vw - 25px);
+  max-width: 500px;
   height: 250px;
   font-size: 14px;
 }
