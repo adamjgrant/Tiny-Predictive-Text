@@ -108,11 +108,14 @@ def main():
                   if iteration_count % PRUNE_FREQUENCY == 0:
                     flatten_to_dictionary()
 
-                  # Determine predictive words, up to three or until a punctuation mark
+                  # Determine predictive words, up to three or until one ends with a punctuation mark
                   for j in range(i + 3, min(i + 6, len(words))):
-                      if words[j] in ['.', ',', '\n', '\r', '\r\n']:
+                      word = words[j]
+                      if word[-1] in ['.', ',', '\n', '\r']:  # Check if the last character is a punctuation
+                          # If a word ends with a punctuation, add the word and break
+                          predictive_words.append(word)
                           break
-                      predictive_words.append(words[j])
+                      predictive_words.append(word)
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
                     
