@@ -38,9 +38,13 @@ def branch_pruner(trie):
 def convert_to_array(obj):
     """
     Recursively converts dictionary objects to the specified array format, ensuring each string ends with a space.
+    This function skips any keys named '\ranked'.
     """
     result = []
     for key, value in obj.items():
+        # Skip the key if it is '\ranked'
+        if key == '\ranked':
+            continue
         key_with_space = key + " "  # Append a space to the key
         if isinstance(value, dict):
             # If the value is a dictionary, recursively process it
