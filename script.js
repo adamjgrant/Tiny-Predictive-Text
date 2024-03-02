@@ -20,7 +20,7 @@ function slugify(text, separator) {
 
   const sets = [
     { to: "a", from: "[ÀÁÂÃÅÆĀĂĄẠẢẤẦẨẪẬẮẰẲẴẶ]" },
-    { to: "ae", from: "[Ä]" },
+    { to: "ae", from: "[ÄÆ]" },
     { to: "c", from: "[ÇĆĈČ]" },
     { to: "d", from: "[ÐĎĐÞ]" },
     { to: "e", from: "[ÈÉÊËĒĔĖĘĚẸẺẼẾỀỂỄỆ]" },
@@ -34,7 +34,7 @@ function slugify(text, separator) {
     { to: "m", from: "[Ḿ]" },
     { to: "n", from: "[ÑŃŅŇ]" },
     { to: "o", from: "[ÒÓÔÕØŌŎŐỌỎỐỒỔỖỘỚỜỞỠỢǪǬƠ]" },
-    { to: "oe", from: "[ŒÖ]" },
+    { to: "oe", from: "[ŒÖØ]" },
     { to: "p", from: "[ṕ]" },
     { to: "r", from: "[ŔŖŘ]" },
     { to: "s", from: "[ŚŜŞŠ]" },
