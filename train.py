@@ -8,7 +8,7 @@ import shutil
 from tqdm import tqdm
 from slugify import slugify
 
-PRUNE_FREQUENCY = 50000
+PRUNE_FREQUENCY = 25000
 TARGET_DICTIONARY_COUNT = 10000 
 
 # Define a function to slugify context words into a filename-safe string
