@@ -69,9 +69,9 @@ def main():
     output_file = 'dictionary.js'
 
     # Prune the dictionaries first
-    prune_unpopular(scores_3_words_file_path, os.path.join(dictionaries_path, "3_words"), target_dictionary_count=TARGET_DICTIONARY_COUNT * THREE_WORD_STAKE_PERCENT)
-    prune_unpopular(scores_2_words_file_path, os.path.join(dictionaries_path, "2_words"), target_dictionary_count=TARGET_DICTIONARY_COUNT * TWO_WORD_STAKE_PERCENT)
-    prune_unpopular(scores_1_word_file_path, os.path.join(dictionaries_path, "1_word"), target_dictionary_count=TARGET_DICTIONARY_COUNT * ONE_WORD_STAKE_PERCENT)
+    prune_unpopular(scores_3_words_file_path, os.path.join(dictionaries_path, "3_words"), target_dictionary_count=int(TARGET_DICTIONARY_COUNT * THREE_WORD_STAKE_PERCENT))
+    prune_unpopular(scores_2_words_file_path, os.path.join(dictionaries_path, "2_words"), target_dictionary_count=int(TARGET_DICTIONARY_COUNT * TWO_WORD_STAKE_PERCENT))
+    prune_unpopular(scores_1_word_file_path, os.path.join(dictionaries_path, "1_word"), target_dictionary_count=int(TARGET_DICTIONARY_COUNT * ONE_WORD_STAKE_PERCENT))
 
     # Initialize the dictionary object
     dictionary = {}
