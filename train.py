@@ -110,12 +110,12 @@ def main():
 
                   # Determine predictive words, up to three or until one ends with a punctuation mark
                   for j in range(i + 3, min(i + 6, len(words))):
-                      word = words[j]
+                      word = words[j].replace('|', r'\|')
                       if word[-1] in ['.', ',', '\n', '\r']:  # Check if the last character is a punctuation
                           # If a word ends with a punctuation, add the word and break
-                          predictive_words.append(word)
+                          predictive_words.append("%s|1" % word)
                           break
-                      predictive_words.append(word)
+                      predictive_words.append("%s|1" % word)
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
                     
