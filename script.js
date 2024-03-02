@@ -91,12 +91,27 @@ entry.addEventListener("keydown", (event) => {
   }
 });
 
+const find_a_suggestion = (word) => {
+  let word_parts = word.split("_");
+  let suggested_word;
+  word = word_parts.join("_")
+  console.log(word)
+  suggested_word = get_suggestion(word);
+  if (suggested_word !== "") return suggested_word
+  word_parts.shift();
+  if (!word_parts.length) return false;
+  find_a_suggestion(word_parts.join("_"))
+}
+
 entry.addEventListener("keyup", () => {
-  const word = get_word();
+  let word = get_word();
   if (word === "") return clear_suggestion();
-  console.log(word);
-  const suggested_word = get_suggestion(word);
-  if (!suggested_word) return clear_suggestion();
+
+  let suggested_word = find_a_suggestion(word);
+
+  if (!suggested_word) {
+    return clear_suggestion();
+  }
   suggested_text_on_deck = suggested_word;
   suggestion.innerHTML = suggested_word;
 });
