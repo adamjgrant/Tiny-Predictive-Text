@@ -29,24 +29,33 @@ def main():
     output_file = 'dictionary.js'
 
     # Prune the dictionaries first
-    prune_unpopular(scores_3_words_file_path, dictionaries_path)
-    prune_unpopular(scores_2_words_file_path, dictionaries_path, target_dictionary_count=5000)
-    prune_unpopular(scores_1_word_file_path, dictionaries_path, target_dictionary_count=1000)
+    prune_unpopular(scores_3_words_file_path, os.path.join(dictionaries_path, "3_words"))
+    prune_unpopular(scores_2_words_file_path, os.path.join(dictionaries_path, "2_words"), target_dictionary_count=5000)
+    prune_unpopular(scores_1_word_file_path, os.path.join(dictionaries_path, "1_word"), target_dictionary_count=1000)
 
     # Initialize the dictionary object
     dictionary = {}
 
     # Iterate over every .pkl file in the dictionaries directory
+    # Define the subdirectories
+    subdirectories = ["3_words", "2_words", "1_word"]
+
     print("Getting all dictionaries...")
-    for filename in os.listdir(dictionaries_path):
-        if filename.endswith('.pkl'):
-            slug, _ = os.path.splitext(filename)
-            file_path = os.path.join(dictionaries_path, filename)
-            
-            with open(file_path, 'rb') as file:
-                trie = pickle.load(file)
-                # Convert trie to the specified array format
-                dictionary[slug] = convert_to_array(trie)
+    for subdirectory in subdirectories:
+        # Construct the path to the subdirectory
+        subdirectory_path = os.path.join(dictionaries_path, subdirectory)
+        
+        # Iterate over every .pkl file in the current subdirectory
+        for filename in os.listdir(subdirectory_path):
+            if filename.endswith('.pkl'):
+                slug, _ = os.path.splitext(filename)
+                file_path = os.path.join(subdirectory_path, filename)
+                
+                with open(file_path, 'rb') as file:
+                    trie = pickle.load(file)
+                    # Convert trie to the specified array format
+                    # Use a modified slug that includes the subdirectory name for uniqueness
+                    dictionary[slug] = convert_to_array(trie)
 
     print(f"Dictionary length is %s" % dictionary.keys().__len__())
     # Write the dictionary object to dictionary.js in the desired format

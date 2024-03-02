@@ -106,9 +106,9 @@ def main():
 
                   # Every now and then, prune unpopular entries.
                   if iteration_count % PRUNE_FREQUENCY == 0:
-                    prune_unpopular(scores_3_words_file_path, dictionaries_path)
-                    prune_unpopular(scores_2_words_file_path, dictionaries_path)
-                    prune_unpopular(scores_1_word_file_path, dictionaries_path)
+                    prune_unpopular(scores_3_words_file_path, os.path.join(dictionaries_path, "3_words"))
+                    prune_unpopular(scores_2_words_file_path, os.path.join(dictionaries_path, "2_words"), target_dictionary_count=5000)
+                    prune_unpopular(scores_1_word_file_path, os.path.join(dictionaries_path, "1_word"), target_dictionary_count=1000)
 
                   # Determine predictive words, up to three or until a punctuation mark
                   for j in range(i + 3, min(i + 6, len(words))):
@@ -118,26 +118,27 @@ def main():
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
                     
-                  finish_filing(context_words, predictive_words, scores_3_words_file_path)
+                  finish_filing(context_words, predictive_words, scores_3_words_file_path, "3_words")
 
                   ## Two word alternative
                   context_words_2 = words[i+1:i+3]
                   predictive_words_2 = predictive_words[:2]
-                  finish_filing(context_words_2, predictive_words_2, scores_2_words_file_path)
+                  finish_filing(context_words_2, predictive_words_2, scores_2_words_file_path, "2_words")
 
                   ## Three word alternative
                   context_words_1 = words[i+2:i+3]
-                  finish_filing(context_words_1, predictive_words_2, scores_1_word_file_path)
+                  finish_filing(context_words_1, predictive_words_2, scores_1_word_file_path, "1_word")
   
-  print("\nFinal pruning...")
-  prune_unpopular(scores_3_words_file_path, dictionaries_path)
-
-def finish_filing(context_words, predictive_words, scores_file_path):
+def finish_filing(context_words, predictive_words, scores_file_path, dictionary_subpath):
     # Slugify the context words
     context_slug = _slugify('_'.join(context_words))
     
-    # Load or initialize the trie for the context words from its .pkl file
-    trie_file_path = os.path.join('training/dictionaries', f'{context_slug}.pkl')
+    # Before loading or initializing the trie, ensure the directory exists
+    dictionary_directory = os.path.join('training/dictionaries', dictionary_subpath)
+    os.makedirs(dictionary_directory, exist_ok=True)
+
+    # Now you can safely proceed with the trie file path
+    trie_file_path = os.path.join(dictionary_directory, f'{context_slug}.pkl')
     trie = load_trie(trie_file_path)
     
     # Update the trie with the predictive words
