@@ -2,8 +2,14 @@ import os
 import pickle
 import json
 
-# Assuming prune_unpopular is defined in train.py and is importable
-TARGET_DICTIONARY_COUNT = 10000 
+# Across all dictionaries, how many entry word sets total should we regularly prune the 
+# dictionary back to contain?
+TARGET_DICTIONARY_COUNT = 16000 
+
+# Of the total TARGET_DICTIONARY_COUNT, what stake in that count should each dictionary get?
+THREE_WORD_STAKE_PERCENT = 0.625
+TWO_WORD_STAKE_PERCENT = 0.3125
+ONE_WORD_STAKE_PERCENT = 0.0625
 
 # Keep this many branches recurring, preferring the highest scoring ones.
 BRANCH_PRUNE_COUNT = 5
@@ -63,9 +69,9 @@ def main():
     output_file = 'dictionary.js'
 
     # Prune the dictionaries first
-    prune_unpopular(scores_3_words_file_path, os.path.join(dictionaries_path, "3_words"))
-    prune_unpopular(scores_2_words_file_path, os.path.join(dictionaries_path, "2_words"), target_dictionary_count=5000)
-    prune_unpopular(scores_1_word_file_path, os.path.join(dictionaries_path, "1_word"), target_dictionary_count=1000)
+    prune_unpopular(scores_3_words_file_path, os.path.join(dictionaries_path, "3_words"), target_dictionary_count=TARGET_DICTIONARY_COUNT * THREE_WORD_STAKE_PERCENT)
+    prune_unpopular(scores_2_words_file_path, os.path.join(dictionaries_path, "2_words"), target_dictionary_count=TARGET_DICTIONARY_COUNT * TWO_WORD_STAKE_PERCENT)
+    prune_unpopular(scores_1_word_file_path, os.path.join(dictionaries_path, "1_word"), target_dictionary_count=TARGET_DICTIONARY_COUNT * ONE_WORD_STAKE_PERCENT)
 
     # Initialize the dictionary object
     dictionary = {}
