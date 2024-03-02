@@ -96,7 +96,10 @@ entry.addEventListener("keydown", (event) => {
     use_suggestion();
   }
 });
-suggestion.addEventListener("click", use_suggestion);
+suggestion.addEventListener("click", () => {
+  use_suggestion();
+  entry.focus();
+});
 
 const find_a_suggestion = (word) => {
   let word_parts = word.split("_");
