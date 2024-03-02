@@ -4,7 +4,7 @@ import json
 
 # Across all dictionaries, how many entry word sets total should we regularly prune the 
 # dictionary back to contain?
-TARGET_DICTIONARY_COUNT = 16000 
+TARGET_DICTIONARY_COUNT = 10000 
 
 # Of the total TARGET_DICTIONARY_COUNT, what stake in that count should each dictionary get?
 THREE_WORD_STAKE_PERCENT = 0.625
@@ -97,7 +97,7 @@ def main():
                     # Use a modified slug that includes the subdirectory name for uniqueness
                     dictionary[slug] = convert_to_array(trie)
 
-    print(f"Dictionary length is %s" % dictionary.keys().__len__())
+    print(f"Dictionary width is %s" % dictionary.keys().__len__())
     # Write the dictionary object to dictionary.js in the desired format
     with open(output_file, 'w') as js_file:
         # Minimize by removing unnecessary whitespace in json.dumps and adjusting js_content formatting

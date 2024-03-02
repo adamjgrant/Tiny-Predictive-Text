@@ -18,10 +18,6 @@ def _slugify(text):
 
 # Define a function to update the trie structure with predictive words
 def update_trie(trie, predictive_words):
-    # TODO: The words are usually not directly in the array. They're usually inside their own array so
-    # I don't think these lookups are finding common parents under the grandparent.
-    # This is probably harming the flexibility of branch traversals and making the dict larger
-    # than it needs to be.
     for word in predictive_words:
         if word not in trie:
             trie[word] = {}
