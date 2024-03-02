@@ -7,6 +7,7 @@ from collections import defaultdict
 import shutil
 from tqdm import tqdm
 from slugify import slugify
+import string
 from create_dictionary import main as flatten_to_dictionary
 
 PRUNE_FREQUENCY = 25000
@@ -122,11 +123,19 @@ def main():
                   # Determine predictive words, up to three or until one ends with a punctuation mark
                   for j in range(i + 3, min(i + 6, len(words))):
                       word = words[j]
-                      if word[-1] in ['.', ',', '\n', '\r']:  # Check if the last character is a punctuation
-                          # If a word ends with a punctuation, add the word and break
+                      # Define a set of punctuation that is allowed within a word
+                      internal_punctuation = {"'", "-"}
+                      # Create a set of punctuation that signals the end of a word, excluding the internal punctuation
+                      ending_punctuation = set(string.punctuation) - internal_punctuation
+                      
+                      # Check if the last character of the word is in the set of ending punctuation
+                      if word[-1] in ending_punctuation:
+                          # If a word ends with an ending punctuation, add the word and break
                           predictive_words.append(word)
                           break
-                      predictive_words.append(word)
+                      else:
+                          # For regular words or words with internal punctuation, add the word
+                          predictive_words.append(word)
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
                     
