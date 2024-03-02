@@ -9,8 +9,24 @@ from tqdm import tqdm
 from slugify import slugify
 import string
 from create_dictionary import main as flatten_to_dictionary
+import signal
 
 PRUNE_FREQUENCY = 25000
+CHUNK_SIZE = 1024 # 1KB per chunk
+
+# Define a flag to indicate when an interrupt has been caught
+interrupted = False
+
+def signal_handler(sig, frame):
+    global interrupted
+    print('Signal received, cleaning up...')
+    interrupted = True
+    # Perform any necessary cleanup here
+    # For example, save progress to file
+    # save_progress()
+
+# Register the signal handler
+signal.signal(signal.SIGINT, signal_handler)
 
 # Define a function to slugify context words into a filename-safe string
 def _slugify(text):
@@ -95,11 +111,10 @@ def main():
             pickle.dump({}, scores_file, protocol=pickle.HIGHEST_PROTOCOL)
 
   # Read the TXT file and process the training data
-  chunk_size = 1024  * 16 # 16KB per chunk
 
   # Get the total size of the file to calculate the number of iterations needed
   total_size = os.path.getsize(training_data_file)
-  total_iterations = total_size // chunk_size + (1 if total_size % chunk_size > 0 else 0)
+  total_iterations = total_size // CHUNK_SIZE + (1 if total_size % CHUNK_SIZE > 0 else 0)
 
   # Define a file to store the progress
   progress_file = 'training/processing_progress.txt'
@@ -117,10 +132,10 @@ def main():
       file.seek(last_processed_position)
       iteration_count = 0
 
-      with tqdm(initial=last_processed_position // chunk_size, total=total_iterations, unit='chunk', desc="Processing file") as pbar:
+      with tqdm(initial=last_processed_position // CHUNK_SIZE, total=total_iterations, unit='chunk', desc="Processing file") as pbar:
           while True:
               current_position = file.tell()
-              row = file.read(chunk_size)
+              row = file.read(CHUNK_SIZE)
               if not row:
                   break
               
@@ -133,6 +148,10 @@ def main():
               # Save the current progress (file position)
               with open(progress_file, 'w') as f:
                   f.write(str(current_position))
+
+              if interrupted:
+                print("Interrupt detected, exiting loop...")
+                sys.exit(0)
 
               # Process words three at a time with shifting window
               for i in range(len(words) - 2):
@@ -192,7 +211,7 @@ def finish_filing(context_words, predictive_words, scores_file_path, dictionary_
     # Save the updated trie back to the .pkl file
     save_trie(trie, trie_file_path)
     
-    # Update the counts in scores_3_word.pkl for the context words slug
+    # Update the counts in scores_3_words.pkl for the context words slug
     update_scores(scores_file_path, context_slug) 
 
 # Check if the script is being run directly and call the main function
