@@ -7,9 +7,9 @@ from collections import defaultdict
 import shutil
 from tqdm import tqdm
 from slugify import slugify
+from create_dictionary import main as flatten_to_dictionary
 
 PRUNE_FREQUENCY = 25000
-TARGET_DICTIONARY_COUNT = 10000 
 
 # Define a function to slugify context words into a filename-safe string
 def _slugify(text):
@@ -106,9 +106,7 @@ def main():
 
                   # Every now and then, prune unpopular entries.
                   if iteration_count % PRUNE_FREQUENCY == 0:
-                    prune_unpopular(scores_3_words_file_path, os.path.join(dictionaries_path, "3_words"))
-                    prune_unpopular(scores_2_words_file_path, os.path.join(dictionaries_path, "2_words"), target_dictionary_count=5000)
-                    prune_unpopular(scores_1_word_file_path, os.path.join(dictionaries_path, "1_word"), target_dictionary_count=1000)
+                    flatten_to_dictionary()
 
                   # Determine predictive words, up to three or until a punctuation mark
                   for j in range(i + 3, min(i + 6, len(words))):
@@ -149,39 +147,6 @@ def finish_filing(context_words, predictive_words, scores_file_path, dictionary_
     
     # Update the counts in scores_3_word.pkl for the context words slug
     update_scores(scores_file_path, context_slug) 
-
-def prune_unpopular(scores_file_path, dictionaries_path, target_dictionary_count=TARGET_DICTIONARY_COUNT):
-    # Load the scores
-    if os.path.exists(scores_file_path):
-        with open(scores_file_path, 'rb') as file:
-            scores = pickle.load(file)
-    else:
-        print("Scores file does not exist.")
-        return
-
-    print(f"\nStopping to prune least popular entries down to target dictionary size of %s..." % target_dictionary_count) 
-
-    # Sort scores by value in descending order and get the top_n keys
-    top_slugs = sorted(scores, key=scores.get, reverse=True)[:target_dictionary_count]
-
-    # Convert to set for faster lookup
-    top_slugs_set = set(top_slugs)
-
-    # Track slugs to be removed from scores
-    slugs_to_remove = []
-
-    # Iterate over all files in dictionaries directory
-    for filename in os.listdir(dictionaries_path):
-        slug, ext = os.path.splitext(filename)
-        if slug not in top_slugs_set:
-            # This file is not among the top scoring, so delete it
-            os.remove(os.path.join(dictionaries_path, filename))
-            slugs_to_remove.append(slug)
-
-    # Remove the pruned entries from scores
-    for slug in slugs_to_remove:
-        if slug in scores:
-            del scores[slug]
 
 # Check if the script is being run directly and call the main function
 if __name__ == "__main__":

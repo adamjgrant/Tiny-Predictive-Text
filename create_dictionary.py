@@ -3,7 +3,7 @@ import pickle
 import json
 
 # Assuming prune_unpopular is defined in train.py and is importable
-from train import prune_unpopular
+TARGET_DICTIONARY_COUNT = 10000 
 
 def convert_to_array(obj):
     """
@@ -64,6 +64,39 @@ def main():
         minimized_json = json.dumps(dictionary, separators=(',', ':'))
         js_content = f"export const dictionary = {minimized_json};"
         js_file.write(js_content)
+
+def prune_unpopular(scores_file_path, dictionaries_path, target_dictionary_count=TARGET_DICTIONARY_COUNT):
+    # Load the scores
+    if os.path.exists(scores_file_path):
+        with open(scores_file_path, 'rb') as file:
+            scores = pickle.load(file)
+    else:
+        print("Scores file does not exist.")
+        return
+
+    print(f"\nStopping to prune least popular entries down to target dictionary size of %s..." % target_dictionary_count) 
+
+    # Sort scores by value in descending order and get the top_n keys
+    top_slugs = sorted(scores, key=scores.get, reverse=True)[:target_dictionary_count]
+
+    # Convert to set for faster lookup
+    top_slugs_set = set(top_slugs)
+
+    # Track slugs to be removed from scores
+    slugs_to_remove = []
+
+    # Iterate over all files in dictionaries directory
+    for filename in os.listdir(dictionaries_path):
+        slug, ext = os.path.splitext(filename)
+        if slug not in top_slugs_set:
+            # This file is not among the top scoring, so delete it
+            os.remove(os.path.join(dictionaries_path, filename))
+            slugs_to_remove.append(slug)
+
+    # Remove the pruned entries from scores
+    for slug in slugs_to_remove:
+        if slug in scores:
+            del scores[slug]
 
 if __name__ == "__main__":
     main()
