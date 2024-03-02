@@ -5,6 +5,36 @@ import json
 # Assuming prune_unpopular is defined in train.py and is importable
 TARGET_DICTIONARY_COUNT = 10000 
 
+# Keep this many branches recurring, preferring the highest scoring ones.
+BRANCH_PRUNE_COUNT = 5
+
+def branch_pruner(trie):
+    # Base condition: if trie is not a dictionary, return immediately (no further branches to prune)
+    if not isinstance(trie, dict):
+        return
+    
+    # Iterate through each key in the trie
+    for key in list(trie.keys()):
+        # Recursively prune the branches of each subtree
+        branch_pruner(trie[key])
+    
+    # If the current level contains '\ranked', start pruning based on BRANCH_PRUNE_COUNT
+    if '\ranked' in trie:
+        ranked_keys = trie['\ranked']
+        # Determine the keys to keep: top BRANCH_PRUNE_COUNT keys based on the order in '\ranked'
+        keys_to_keep = set(ranked_keys[:BRANCH_PRUNE_COUNT])
+        
+        # Add '\ranked' to the keys to keep to avoid pruning it
+        keys_to_keep.add('\ranked')
+        
+        # Prune the keys not in keys_to_keep
+        for key in list(trie.keys()):
+            if key not in keys_to_keep:
+                del trie[key]
+                
+        # Update the '\ranked' list to reflect the pruned keys
+        trie['\ranked'] = ranked_keys[:BRANCH_PRUNE_COUNT]
+
 def convert_to_array(obj):
     """
     Recursively converts dictionary objects to the specified array format, ensuring each string ends with a space.
@@ -88,10 +118,22 @@ def prune_unpopular(scores_file_path, dictionaries_path, target_dictionary_count
     # Iterate over all files in dictionaries directory
     for filename in os.listdir(dictionaries_path):
         slug, ext = os.path.splitext(filename)
+        full_path = os.path.join(dictionaries_path, filename)
         if slug not in top_slugs_set:
             # This file is not among the top scoring, so delete it
-            os.remove(os.path.join(dictionaries_path, filename))
+            os.remove(full_path)
             slugs_to_remove.append(slug)
+        else:
+          # Since we're keeping the file, let's prune its branches.
+          with open(full_path, 'rb') as f:
+              trie = pickle.load(f)
+          
+          # Apply branch pruning to the trie
+          branch_pruner(trie)
+          
+          # Save the pruned trie back to the file
+          with open(full_path, 'wb') as f:
+              pickle.dump(trie, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     # Remove the pruned entries from scores
     for slug in slugs_to_remove:
