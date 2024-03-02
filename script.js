@@ -10,8 +10,8 @@ const [entry, suggestion] = [
   document.getElementById("suggestion")
 ];
 
-const get_word = () => {
-  let last_three_words = entry.value.trim().split(" ");
+const get_word = (word=entry.value) => {
+  let last_three_words = word.trim().split(" ");
   return slugify(last_three_words.slice(-3), "_");
 };
 
@@ -73,6 +73,8 @@ function slugify(text, separator) {
 const clear_suggestion = () => {
   suggestion.innerHTML = "...";
   suggested_text_on_deck = "";
+  suggestion.classList.remove("two_word");
+  suggestion.classList.remove("three_word");
 }
 
 const get_suggestion = (word) => {
@@ -101,22 +103,33 @@ suggestion.addEventListener("click", () => {
   entry.focus();
 });
 
-const find_a_suggestion = (word) => {
-  let word_parts = word.split("_");
+const set_suggested_word_class = (word_parts) => {
+  console.log(word_parts);
+  suggestion.classList.remove("two_word");
+  suggestion.classList.remove("three_word");
+  if (word_parts.length > 2) return suggestion.classList.add("three_word");
+  if (word_parts.length > 1) return suggestion.classList.add("two_word");
+  return
+}
+
+const find_a_suggestion = (word_parts) => {
   let suggested_word;
-  word = word_parts.join("_")
+  let word = get_word(word_parts.join(" "));
   suggested_word = get_suggestion(word);
-  if (suggested_word !== "") return suggested_word
+  if (suggested_word !== "") {
+    set_suggested_word_class(word_parts);
+    return suggested_word
+  }
   word_parts.shift();
   if (!word_parts.length) return false;
-  return find_a_suggestion(word_parts.join("_"))
+  return find_a_suggestion(word_parts)
 }
 
 entry.addEventListener("keyup", () => {
   let word = get_word();
   if (word === "") return clear_suggestion();
 
-  let suggested_word = find_a_suggestion(word);
+  let suggested_word = find_a_suggestion(entry.value.trim().split(" ").slice(-3));
 
   if (!suggested_word) {
     return clear_suggestion();

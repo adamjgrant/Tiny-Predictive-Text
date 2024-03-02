@@ -15,3 +15,18 @@ textarea {
   padding: 5px 10px;
   margin-bottom: 5px;
 }
+
+#suggestion.two_word {
+  background: teal;
+}
+
+#suggestion.three_word {
+  background: lightgreen;
+  color: black;
+}
+
+.color_box {
+  display: inline-block;
+  height: 14px;
+  width: 14px;
+}
