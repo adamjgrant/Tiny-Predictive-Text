@@ -1,8 +1,8 @@
+// import { Tree } from './permute.js';
+
 // Permute.js
 class Tree{constructor(t){this.object=t}get one(){return this.translated_branch.one()}get permutations(){return this.translated_branch.terminal_leaves()}get translated_branch(){return new Branch(this,this.translate_main)}get translate_main(){return new Branch(this,this.object.main).translate_object}branch(t){return this.object[t]||[]}get unique_branch_name(){const t=Object.keys(this.object).reduce((t,e)=>{return e.length>t?e:t},""),e=`${t}-${Date.now()}`;return this.object[e]=[],e}}class Branch{constructor(t,e,n){this.tree=t,this.object=e,this.then_branches=n}terminal_leaves(t=""){return this.branches().length?this.leaves().reduce((e,n)=>{return e.concat(this.branches().reduce((e,r)=>{return e.concat(new Branch(this.tree,r).terminal_leaves(`${t}${n}`))},[]))},[]):this.leaves().map(e=>`${t}${e}`)}one(t=""){const e=`${t}${this.leaves(!0)}`;return this.branches().length?new Branch(this.tree,this.branches(!0)).one(e):e}leaves(t=!1){let e=this.object.filter(t=>new Leaf(t).is_string)||[];const n=e.length?e:[""];return t?n[~~(n.length*Math.random())]:n}branches(t=!1){const e=new Leaf(this.object);e.is_directive&&(this.object=[this.translate_directive(e)]),e.is_string&&(this.object=[this.object]);const n=this.object.filter(t=>new Leaf(t).is_branch);return t?n[~~(n.length*Math.random())]:n}translate_directive(t){return t.has_directive("branch")?this.translate_branch_reference(t):t.has_directive("ps")?this.translate_ps_reference(t):void 0}get translate_object(){const t=new Leaf(this.object);return t.is_directive?this.translate_directive(t):(this.is_terminal_branch&&void 0!==this.then_branches&&this.object.push(this.then_branches),this.object.map(t=>{const e=new Leaf(t);if(e.has_directive("branch"))return this.translate_branch_reference(e);if(e.has_directive("ps"))return this.translate_ps_reference(e);if(e.is_branch){const t=new Branch(this.tree,e.node);return t.is_terminal_branch||(t.then_branches=this.then_branches),t.translate_object}return e.node}))}get is_terminal_branch(){return!(this.branches().length&&void 0!==this.then_branches)&&this.object.every(t=>new Leaf(t).is_string)}translate_branch_reference(t){const e=this.duplicate_branch(this.tree.branch(t.node.branch)),n=new Branch(this.tree,e,this.then_branches);if(t.has_directive("then")){const e=this.translate_then_reference(t);n.prepend_then_branch(e)}return n.translate_object}translate_then_reference(t){let e=t.node.then;return"String"===e.constructor.name&&(e=[e]),new Branch(this.tree,e).translate_object}translate_ps_reference(t){return new PermyScript(t.node.ps).compile}duplicate_branch(t){return JSON.parse(JSON.stringify(t))}prepend_then_branch(t){if(void 0!==t){const e=new Branch(this.tree,t,this.then_branches).translate_object;return this.is_terminal_branch?this.object=this.deep_end(t):this.prepend_to_non_terminal_branch(e)}}prepend_to_non_terminal_branch(t){const e=this.object.filter(t=>{return!new Leaf(t).is_string}).map(e=>{const n=new Branch(this.tree,e,this.then_branches).translate_object,r=this.duplicate_branch(this.tree.object),i=this.tree.unique_branch_name;return r.main={branch:i,then:t},r[i]=n,new Tree(r).translate_main});return this.object=[...this.leaves(),...e]}deep_end(t){if(!this.branches().length)return this.object.push(t),this.object;const e=this.branches().map(e=>{const n=new Branch(this.tree,e);return n.deep_end(t),n.object});return this.object=[...this.leaves(),...e]}}class Leaf{constructor(t){this.node=t}get is_branch(){return Array.isArray(this.node)}get is_string(){return"String"===this.node.constructor.name}get is_directive(){return this.has_directive("branch")||this.has_directive("ps")}has_directive(t="branch"){return"object"==typeof this.node&&void 0!==this.node[t]}}class PermyScript{constructor(t){this.string=t,this.tree_object={main:[]},this.last_unique_branch_name="0"}get unique_branch_name(){return this.last_unique_branch_name=String(parseInt(this.last_unique_branch_name)+1),this.last_unique_branch_name}get break_into_parts(){const t=[],e=this.string.split("");return e.reduce((n,r,i)=>{return r.match(/\(/)?(t.push(n),r):r.match(/\)/)?(t.push(n+r),""):i!==e.length-1?n+r:void t.push(n+r)},""),this.tree_object.main=t,this}get convert_parens(){return this.tree_object.main=this.tree_object.main.map(t=>{return new Part(t)}),this}get delegate_to_branches(){let t=new Tree({main:[]});return this.tree_object.main.forEach(e=>{if(e.is_directive){const n=this.unique_branch_name;t.object[n]=e.branch,t=new Tree(t.object);const r=t.translated_branch,i={branch:n};r.deep_end(i),t.object.main=r.object,t=new Tree(t.object)}else{let n=t.translated_branch;"[]"===JSON.stringify(n.object)?n=new Branch(t,e.branch):n.deep_end(e.branch),t.object.main=n.object,t=new Tree(t.object)}}),this.tree_object=t.object,this}get compile(){return new Tree(this.break_into_parts.convert_parens.delegate_to_branches.tree_object).translate_main}}class Part{constructor(t){this.string=t}get is_directive(){return"("===this.string.substr(0,1)&&")"===this.string.substring(this.string.length,this.string.length-1)}get branch(){return this.string.replace(/[()]/g,"").split("|")}}
-
-const tree = {"main":[{"branch":"the"},{"branch":"be"},{"branch":"to"},{"branch":"of"},{"branch":"and"},{"branch":"a"},{"branch":"in"},{"branch":"that"},{"branch":"have"},{"branch":"i"},{"branch":"it"},{"branch":"for"},{"branch":"not"},{"branch":"on"},{"branch":"with"},{"branch":"he"},{"branch":"as"},{"branch":"you"},{"branch":"do"},{"branch":"at"},{"branch":"this"},{"branch":"but"},{"branch":"his"},{"branch":"by"},{"branch":"from"}],"the":[["the ",[["world ",["is ","has ","seems "]],["time ",["passes ","for ","to "]],["best ",["option ","choice ","way "]],["first ",["step ","time ","place "]],["most ",["important ","common ","likely "]]]]],"be":[["be ",[["sure ",["to ","that ","of "]],["aware ",["of ","that ","in "]],["careful ",["when ","with ","about "]],["prepared ",["for ","to ","by "]],["ready ",["for ","to ","with "]]]]],"to":[["to ",[["be ",["sure ","prepared ","able "]],["have ",["a ","the ","an "]],["see ",["that ","if ","how "]],["do ",["this ","that ","it "]],["go ",["to ","ahead ","on "]]]]],"of":[["of ",[[{"branch":"the"},[["world ",["is ","has ","knows "]],["best ",["choice ","option ","idea "]],["most ",["important ","relevant ","significant "]]]],[{"branch":"our"},[["time ",["is ","was ","can be "]],["efforts ",["are ","will be ","have been "]],["community ",["is ","supports ","needs "]]]],["a ",[["new ",["era ","beginning ","chapter "]],["great ",["opportunity ","advantage ","benefit "]],["significant ",["change ","impact ","role "]]]],["this ",[["is ","was ","can be "]],["case ",["involves ","requires ","presents "]],["situation ",["demands ","calls for ","entails "]]]],["that ",[["is ","was ","can be "]],["can ",["help ","support ","improve "]],["will ",["change ","define ","influence "]]]]],"and":[["and ",[[{"branch":"the"},[["world ",["is ","has ","knows "]],["best ",["choice ","option ","idea "]],["most ",["important ","relevant ","significant "]]]],["a ",[["new ",["era ","beginning ","chapter "]],["great ",["opportunity ","advantage ","benefit "]],["significant ",["change ","impact ","role "]]]],["in ",[["the ",["middle ","heart ","depths "]],["a ",["sense ","world ","manner "]],["our ",["lives ","times ","history "]]]],["to ",[["the ",["point ","extent ","degree "]],["a ",["greater ","lesser ","similar "]],["our ",["advantage ","benefit ","interest "]]]],["with ",[["the ",["aim ","goal ","purpose "]],["a ",["clear ","defined ","specific "]],["one ",["goal ","objective ","aim "]]]]]]],"a":[["a ",[["new ",["chapter ","era ","beginning "]],["great ",["opportunity ","success ","achievement "]],["small ",["step ","change ","amount "]],["large ",["scale ","amount ","number "]],["young ",["individual ","person ","talent "]]]]],"in":[["in ",[[{"branch":"the"},[["beginning ",["of ","with ","to "]],["end ",["of ","with ","to "]],["middle ",["of ","with ","to "]]]],["a ",[["moment ",["of ","like ","as "]],["sense ",["of ","that ","in "]],["world ",["of ","like ","as "]]]],["that ",[["moment ",["when ","where ","as "]],["case ",["when ","where ","as "]],["time ",["when ","where ","as "]]]],["this ",[["case ",["involves ","requires ","presents "]],["situation ",["demands ","calls for ","entails "]],["moment ",["captures ","represents ","signifies "]]]],[{"branch":"our"},[["community ",["supports ","needs ","values "]],["society ",["reflects ","demands ","challenges "]],["world ",["changes ","evolves ","adapts "]]]]]]],"that":[["that ",[["is ",["true ","possible ","important "]],["was ",["necessary ","inevitable ","required "]],["can ",["be ","do ","make "]],["will ",["be ","do ","make "]],["should ",["be ","do ","consider "]]]]],"have":[["have ",[["been ",["working ","trying ","looking "]],["a ",[["lot ",["of ","to do ","going on "]],["bit ",["more ","less ","of "]],["great deal ",["of ","to offer ","going for it "]]]],[{"branch":"the"},[["ability ",["to ","and ","but "]],["opportunity ",["to ","and ","but "]],["chance ",["to ","and ","but "]]]],["no ",[["doubt ",["that ","in ","about "]],["idea ",["of ","about ","how "]],["clue ",["about ","to ","why "]]]],["some ",[["time ",["to ","for ","on "]],["kind ",["of ","to ","for "]],["sort ",["of ","to ","for "]]]]]]],"i":[["i ",[["am ",["excited ","ready ","prepared "]],["have ",["seen ","experienced ","understood "]],["think ",["that ","about ","it's "]],["want ",["to ","a ","the "]],["know ",["that ","about ","how "]]]]],"it":[["it ",[["is ",["important ","necessary ","crucial "]],["was ",["a ","the ","an "]],["has ",["been ","a ","the "]],["can ",["be ","do ","achieve "]],["will ",["be ","do ","achieve "]]]]],"for":[["for ",[["the ",["first time ","most part ","sake of "]],["a ",["moment ","while ","change "]],["this ",["reason ","purpose ","project "]],["that ",["reason ","purpose ","occasion "]],["an ",["example ","opportunity ","alternative "]]]]],"not":[["not ",[["only ",["is it ","does it ","can it "]],["to ",["mention ","forget ","overlook "]],["be ",["ignored ","overlooked ","considered "]],["just ",["a ","the ","an "]],["so ",["much ","little ","important "]]]]],"on":[["on ",[["the ",["other hand ","contrary ","whole "]],["a ",["daily basis ","regular basis ","clear day "]],["this ",["topic ","matter ","subject "]],["that ",["note ","day ","occasion "]],["one ",["hand ","side ","level "]]]]],"with":[["with ",[["the ",["help ","assistance ","support "]],["a ",["few ","little ","bit of "]],["this ",["in mind ","approach ","strategy "]],["that ",["being said ","in mind ","considered "]],["one ",["another ","look ","goal in mind "]]]]],"he":[["he ",[["is ",["a great ","an experienced ","a talented "]],["was ",["known as ","regarded as ","considered "]],["has ",["been ","a ","the "]],["can ",["be ","do ","achieve "]],["will ",["be ","do ","achieve "]]]]],"as":[["as ",[["the ",["world turns ","sun sets ","day goes "]],["a ",["result ","matter of fact ","whole "]],["an ",["example ","illustration ","aside "]],["well ",["known ","established ","respected "]],["much ",["as ","to ","so as to "]]]]],"you":[["you ",[["are ",["the best ","amazing ","capable "]],["have ",["the ability ","the option ","the opportunity "]],["can ",["see ","do ","achieve "]],["will ",["be ","do ","achieve "]],["should ",["consider ","remember ","know "]]]]],"do":[["do ",[["not ",["forget ","hesitate ","worry "]],["you ",["know ","understand ","remember "]],["we ",["have ","need ","want "]],["they ",["know ","understand ","see "]],["i ",["need ","want ","wish "]]]]],"at":[["at ",[["the ",["end ","beginning ","heart "]],["a ",["glance ","minimum ","maximum "]],["this ",["time ","moment ","point "]],["that ",["time ","moment ","point "]],["one ",["time ","point ","moment "]]]]],"this":[["this ",[["is ",["a new ","an important ","a critical "]],["was ",["a turning point ","an example ","a case "]],["can ",["be ","serve as ","represent "]],["has ",["been ","a ","the "]],["will ",["be ","do ","achieve "]]]]],"but":[["but ",[["the ",["truth is ","fact remains ","reality is "]],["a ",["few ","little ","bit of "]],["it ",["is ","was ","remains "]],["this ",["is ","was ","can be "]],["that ",["is ","was ","can be "]]]]],"his":[["his ",[["own ",["experience ","decision ","choice "]],["life ",["is ","was ","has been "]],["work ",["has ","is ","continues "]],["name ",["is ","was ","remains "]],["family ",["is ","was ","has been "]]]]],"by":[["by ",[["the ",["time ","way ","end "]],["a ",["stroke of genius ","simple act ","mere fact "]],["this ",["means ","point ","logic "]],["that ",["time ","standard ","measure "]],["an ",["act ","example ","effort "]]]]],"from":[["from ",[["the ",["beginning ","first moment ","get-go "]],["a ",["different perspective ","distance ","standpoint "]],["this ",["point ","perspective ","angle "]],["that ",["day ","moment ","time "]],["an ",["early stage ","initial phase ","early point "]]]]]}
-
+import { dictionary } from './dictionary.js';
 
 let suggested_text_on_deck = "";
 const [entry, suggestion] = [
@@ -11,9 +11,64 @@ const [entry, suggestion] = [
 ];
 
 const get_word = () => {
-  let last_word = entry.value.trim().split(" ");
-  return last_word[last_word.length - 1].toLowerCase();
+  let last_three_words = entry.value.trim().split(" ");
+  return slugify(last_three_words.slice(-3), "_");
 };
+
+function slugify(text, separator) {
+  text = text.toString().toLowerCase().trim()
+
+  const sets = [
+    { to: "a", from: "[ÀÁÂÃÅÆĀĂĄẠẢẤẦẨẪẬẮẰẲẴẶ]" },
+    { to: "ae", from: "[Ä]" },
+    { to: "c", from: "[ÇĆĈČ]" },
+    { to: "d", from: "[ÐĎĐÞ]" },
+    { to: "e", from: "[ÈÉÊËĒĔĖĘĚẸẺẼẾỀỂỄỆ]" },
+    { to: "g", from: "[ĜĞĢǴ]" },
+    { to: "h", from: "[ĤḦ]" },
+    { to: "i", from: "[ÌÍÎÏĨĪĮİỈỊ]" },
+    { to: "j", from: "[Ĵ]" },
+    { to: "ij", from: "[Ĳ]" },
+    { to: "k", from: "[Ķ]" },
+    { to: "l", from: "[ĹĻĽŁ]" },
+    { to: "m", from: "[Ḿ]" },
+    { to: "n", from: "[ÑŃŅŇ]" },
+    { to: "o", from: "[ÒÓÔÕØŌŎŐỌỎỐỒỔỖỘỚỜỞỠỢǪǬƠ]" },
+    { to: "oe", from: "[ŒÖ]" },
+    { to: "p", from: "[ṕ]" },
+    { to: "r", from: "[ŔŖŘ]" },
+    { to: "s", from: "[ŚŜŞŠ]" },
+    { to: "ss", from: "[ß]" },
+    { to: "t", from: "[ŢŤ]" },
+    { to: "u", from: "[ÙÚÛŨŪŬŮŰŲỤỦỨỪỬỮỰƯ]" },
+    { to: "ue", from: "[Ü]" },
+    { to: "w", from: "[ẂŴẀẄ]" },
+    { to: "x", from: "[ẍ]" },
+    { to: "y", from: "[ÝŶŸỲỴỶỸ]" },
+    { to: "z", from: "[ŹŻŽ]" },
+    { to: "-", from: "[·/_,:;']" },
+  ]
+
+  sets.forEach((set) => {
+    text = text.replace(new RegExp(set.from, "gi"), set.to)
+  })
+
+  text = text
+    .toString()
+    .toLowerCase()
+    .replace(/\s+/g, "-") // Replace spaces with -
+    .replace(/&/g, "-and-") // Replace & with 'and'
+    .replace(/[^\w\-]+/g, "") // Remove all non-word chars
+    .replace(/\--+/g, "-") // Replace multiple - with single -
+    .replace(/^-+/, "") // Trim - from start of text
+    .replace(/-+$/, "") // Trim - from end of text
+
+  if (typeof separator !== "undefined" && separator !== "-") {
+    text = text.replace(/-/g, separator)
+  }
+
+  return text
+}
 
 const clear_suggestion = () => {
   suggestion.innerHTML = "...";
@@ -21,10 +76,11 @@ const clear_suggestion = () => {
 }
 
 const get_suggestion = (word) => {
-  word = word.replace(/[\s\:\.\,]/g, "");
-  let new_tree = tree[word];
-  if (!new_tree) return "";
-  let permute = new Tree({ "main": new_tree[0][1] });
+  let new_tree = dictionary[word];
+  if (!new_tree) { 
+    return ""; 
+  }
+  let permute = new Tree({ "main": new_tree });
   return permute.one;
 };
 
@@ -37,12 +93,26 @@ entry.addEventListener("keydown", (event) => {
   }
 });
 
+const find_a_suggestion = (word) => {
+  let word_parts = word.split("_");
+  let suggested_word;
+  word = word_parts.join("_")
+  suggested_word = get_suggestion(word);
+  if (suggested_word !== "") return suggested_word
+  word_parts.shift();
+  if (!word_parts.length) return false;
+  return find_a_suggestion(word_parts.join("_"))
+}
+
 entry.addEventListener("keyup", () => {
-  const word = get_word();
+  let word = get_word();
   if (word === "") return clear_suggestion();
-  console.log(word);
-  const suggested_word = get_suggestion(word);
-  if (!suggested_word) return clear_suggestion();
+
+  let suggested_word = find_a_suggestion(word);
+
+  if (!suggested_word) {
+    return clear_suggestion();
+  }
   suggested_text_on_deck = suggested_word;
   suggestion.innerHTML = suggested_word;
 });
