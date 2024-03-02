@@ -91,7 +91,7 @@ def main():
                 iteration_count += 1
 
                 # Every now and then, prune unpopular entries.
-                if iteration_count % 5000 == 0:
+                if iteration_count % 100000 == 0:
                   prune_unpopular(scores_file_path, dictionaries_path)
 
                 # Determine predictive words, up to three or until a punctuation mark
