@@ -13,8 +13,8 @@ CHUNK_SIZE = 1024 # 1KB per chunk
 
 # Global variable to hold tries and scores
 trie_store = {
-    'tries': {},  # Stores all trie structures
-    'scores': {}  # Stores scores for context slugs
+    'tries': {'3_words': {}, '2_words': {}, '1_word': {}},
+    'scores': {}
 }
 
 # Define a flag to indicate when an interrupt has been caught
@@ -152,7 +152,8 @@ def main():
               if (current_position - prune_position_marker > PRUNE_FREQUENCY):
                 prune_position_marker = current_position
                 print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
-                flatten_to_dictionary()
+                global trie_store
+                flatten_to_dictionary(trie_store)
 
               # Process words three at a time with shifting window
               for i in range(len(words) - 2):
