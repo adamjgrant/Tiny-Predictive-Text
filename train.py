@@ -11,7 +11,7 @@ import string
 from create_dictionary import main as flatten_to_dictionary
 import signal
 
-PRUNE_FREQUENCY = 250000 # Every this many document positions
+PRUNE_FREQUENCY = 200000 # Every this many document positions
 CHUNK_SIZE = 1024 # 1KB per chunk
 
 # Define a flag to indicate when an interrupt has been caught
@@ -155,16 +155,16 @@ def main():
                 print("Interrupt detected, exiting loop...")
                 sys.exit(0)
 
+              # Every now and then, prune unpopular entries.
+              if (current_position - prune_position_marker > PRUNE_FREQUENCY):
+                prune_position_marker = current_position
+                print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
+                flatten_to_dictionary()
+
               # Process words three at a time with shifting window
               for i in range(len(words) - 2):
                   context_words = words[i:i+3]
                   predictive_words = []
-
-                  # Every now and then, prune unpopular entries.
-                  if (current_position - prune_position_marker > PRUNE_FREQUENCY):
-                    prune_position_marker = current_position
-                    print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
-                    flatten_to_dictionary()
 
                   # Determine predictive words, up to three or until one ends with a punctuation mark
                   for j in range(i + 3, min(i + 6, len(words))):
