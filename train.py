@@ -1,9 +1,6 @@
 # Import necessary modules
 import os
 import sys
-import pickle
-import re
-from collections import defaultdict
 import shutil
 from tqdm import tqdm
 from slugify import slugify
@@ -13,6 +10,12 @@ import signal
 
 PRUNE_FREQUENCY = 200000 # Every this many document positions
 CHUNK_SIZE = 1024 # 1KB per chunk
+
+# Global variable to hold tries and scores
+trie_store = {
+    'tries': {},  # Stores all trie structures
+    'scores': {}  # Stores scores for context slugs
+}
 
 # Define a flag to indicate when an interrupt has been caught
 interrupted = False
@@ -53,32 +56,20 @@ def update_trie(trie, predictive_words):
                     trie['\ranked'].insert(max(0, index - 1), trie['\ranked'].pop(index))
         trie = trie[word]
 
-# Define a function to load or initialize the trie from a .pkl file
-def load_trie(file_path):
-    if os.path.exists(file_path):
-        with open(file_path, 'rb') as file:
-            trie = pickle.load(file)
-    else:
-        trie = {}
-    return trie
+# Define a function to load or initialize the trie from memory
+def load_trie(context_slug):
+    return trie_store['tries'].get(context_slug, {})
 
-# Define a function to save the updated trie back to the .pkl file
-def save_trie(trie, file_path):
-    with open(file_path, 'wb') as file:
-        pickle.dump(trie, file, protocol=pickle.HIGHEST_PROTOCOL)
+# Define a function to save the updated trie into memory
+def save_trie(trie, context_slug):
+    trie_store['tries'][context_slug] = trie
 
-# Define a function to update scores in scores.pkl
-def update_scores(scores_file_path, context_slug):
-    if os.path.exists(scores_file_path):
-        with open(scores_file_path, 'rb') as file:
-            scores = pickle.load(file)
+# Increment the score for the context_slug in trie_store
+def update_scores(context_slug):
+    if context_slug in trie_store['scores']:
+        trie_store['scores'][context_slug] += 1
     else:
-        scores = {}
-    
-    scores[context_slug] = scores.get(context_slug, 0) + 1
-    
-    with open(scores_file_path, 'wb') as file:
-        pickle.dump(scores, file, protocol=pickle.HIGHEST_PROTOCOL)
+        trie_store['scores'][context_slug] = 1
 
 # Define a main function to orchestrate the training process
 def main():
@@ -205,17 +196,16 @@ def finish_filing(context_words, predictive_words, scores_file_path, dictionary_
     os.makedirs(dictionary_directory, exist_ok=True)
 
     # Now you can safely proceed with the trie file path
-    trie_file_path = os.path.join(dictionary_directory, f'{context_slug}.pkl')
-    trie = load_trie(trie_file_path)
+    trie = load_trie(context_slug)
     
     # Update the trie with the predictive words
     update_trie(trie, predictive_words)
     
     # Save the updated trie back to the .pkl file
-    save_trie(trie, trie_file_path)
+    save_trie(trie, context_slug)
     
     # Update the counts in scores_3_words.pkl for the context words slug
-    update_scores(scores_file_path, context_slug) 
+    update_scores(context_slug) 
 
 # Check if the script is being run directly and call the main function
 if __name__ == "__main__":
