@@ -57,19 +57,27 @@ def update_trie(trie, predictive_words):
         trie = trie[word]
 
 # Define a function to load or initialize the trie from memory
-def load_trie(context_slug):
-    return trie_store['tries'].get(context_slug, {})
+def load_trie(context_slug, path):
+    # Access the sub-trie directly using the path
+    context_trie = trie_store['tries'].get(context_slug, {})
+    return context_trie.get(path, {})
 
-# Define a function to save the updated trie into memory
-def save_trie(trie, context_slug):
-    trie_store['tries'][context_slug] = trie
+def save_trie(trie, context_slug, path):
+    # Ensure the base structure for the context_slug exists
+    if context_slug not in trie_store['tries']:
+        trie_store['tries'][context_slug] = {}
+    
+    # Directly save the trie at the specified path under the context_slug
+    trie_store['tries'][context_slug][path] = trie
 
-# Increment the score for the context_slug in trie_store
-def update_scores(context_slug):
-    if context_slug in trie_store['scores']:
-        trie_store['scores'][context_slug] += 1
+def update_scores(context_slug, path):
+    # Construct a unique key from context_slug and path for identifying the score
+    unique_key = f"{context_slug}:{path}"
+    
+    if unique_key in trie_store['scores']:
+        trie_store['scores'][unique_key] += 1
     else:
-        trie_store['scores'][context_slug] = 1
+        trie_store['scores'][unique_key] = 1
 
 # Define a main function to orchestrate the training process
 def main():
@@ -97,12 +105,6 @@ def main():
   scores_3_words_file_path = 'training/scores_3_words.pkl'
   scores_2_words_file_path = 'training/scores_2_words.pkl'
   scores_1_word_file_path = 'training/scores_1_word.pkl'
-
-  # Set each score file with an empty object if they don't exist.
-  for path in [scores_1_word_file_path, scores_2_words_file_path, scores_3_words_file_path]:
-    if not os.path.exists(path):
-        with open(path, 'wb') as scores_file:
-            pickle.dump({}, scores_file, protocol=pickle.HIGHEST_PROTOCOL)
 
   # Read the TXT file and process the training data
 
@@ -190,22 +192,18 @@ def main():
 def finish_filing(context_words, predictive_words, scores_file_path, dictionary_subpath):
     # Slugify the context words
     context_slug = _slugify('_'.join(context_words))
-    
-    # Before loading or initializing the trie, ensure the directory exists
-    dictionary_directory = os.path.join('training/dictionaries', dictionary_subpath)
-    os.makedirs(dictionary_directory, exist_ok=True)
 
     # Now you can safely proceed with the trie file path
-    trie = load_trie(context_slug)
+    trie = load_trie(context_slug, dictionary_subpath)
     
     # Update the trie with the predictive words
     update_trie(trie, predictive_words)
     
     # Save the updated trie back to the .pkl file
-    save_trie(trie, context_slug)
+    save_trie(trie, context_slug, dictionary_subpath)
     
     # Update the counts in scores_3_words.pkl for the context words slug
-    update_scores(context_slug) 
+    update_scores(context_slug, scores_file_path) 
 
 # Check if the script is being run directly and call the main function
 if __name__ == "__main__":
