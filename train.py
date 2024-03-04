@@ -56,19 +56,19 @@ def _slugify(text):
 # Define a function to update the trie structure with predictive words
 def update_trie(trie, predictive_words):
     for word in predictive_words:
+        # Ensure each word has a sub-trie if it does not exist
         if word not in trie:
             trie[word] = {}
-            # Ensure the '\ranked' key exists with a default list if not already present
-            if '\ranked' not in trie:
-                trie['\ranked'] = []
-            # Add the word to '\ranked' if it's not already in the list
-            if word not in trie['\ranked']:
-                trie['\ranked'].append(word)
-            else:
-                # Promote the word by one position if it's not already at the start
-                index = trie['\ranked'].index(word)
-                if index > 0:
-                    trie['\ranked'].insert(max(0, index - 1), trie['\ranked'].pop(index))
+
+        # Ensure the '\ranked' key exists at the current level if not already present
+        if '\ranked' not in trie:
+            trie['\ranked'] = {}
+
+        # Update the score in '\ranked' at the current level for the current word
+        trie['\ranked'][word] = trie['\ranked'].get(word, 0) + 1
+        
+        # Move to the sub-trie of the current word for the next iteration
+        # This ensures the structure for subsequent words while keeping '\ranked' updated at the parent level
         trie = trie[word]
 
 # Define a function to load or initialize the trie from memory
@@ -163,7 +163,7 @@ def main():
               words = row.split()
 
               # Every now and then save our progress.
-              # print(f"Saving the current position of %s" % current_position)
+              print(f"Saving the current position of %s" % current_position)
               # Save the current progress (file position)
               with open(progress_file, 'w') as f:
                   f.write(str(current_position))

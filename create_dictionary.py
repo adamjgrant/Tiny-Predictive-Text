@@ -14,27 +14,30 @@ def branch_pruner(trie):
     if not isinstance(trie, dict):
         return
     
-    # Iterate through each key in the trie
+    # Recursively prune the branches of each subtree
     for key in list(trie.keys()):
-        # Recursively prune the branches of each subtree
-        branch_pruner(trie[key])
+        if key != '\ranked':
+            branch_pruner(trie[key])
     
     # If the current level contains '\ranked', start pruning based on BRANCH_PRUNE_COUNT
     if '\ranked' in trie:
-        ranked_keys = trie['\ranked']
-        # Determine the keys to keep: top BRANCH_PRUNE_COUNT keys based on the order in '\ranked'
-        keys_to_keep = set(ranked_keys[:BRANCH_PRUNE_COUNT])
+        # Sort the ranked words by their scores in descending order and keep only the top BRANCH_PRUNE_COUNT words
+        top_ranked_words = sorted(trie['\ranked'].items(), key=lambda item: item[1], reverse=True)[:BRANCH_PRUNE_COUNT]
+        # Convert the list of tuples back to a dictionary
+        top_ranked_dict = {word: score for word, score in top_ranked_words}
+
+        # print(top_ranked_dict)
         
-        # Add '\ranked' to the keys to keep to avoid pruning it
-        keys_to_keep.add('\ranked')
+        # Prune the trie to keep only the branches corresponding to the top ranked words
+        keys_to_keep = set(word for word, _ in top_ranked_words)
+        keys_to_keep.add('\ranked')  # Ensure '\ranked' itself is kept
         
-        # Prune the keys not in keys_to_keep
         for key in list(trie.keys()):
-            if key not in keys_to_keep:
-                del trie[key]
-                
-        # Update the '\ranked' list to reflect the pruned keys
-        trie['\ranked'] = ranked_keys[:BRANCH_PRUNE_COUNT]
+            if key not in keys_to_keep and key != '\ranked':
+                del trie[key]  # Remove branches not among the top ranked
+
+        # Update the '\ranked' dictionary to reflect only the top ranked words and their scores
+        trie['\ranked'] = top_ranked_dict
 
 def convert_to_array(obj):
     """
