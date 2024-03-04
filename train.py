@@ -8,7 +8,14 @@ import string
 from create_dictionary import main as flatten_to_dictionary
 import signal
 
-PRUNE_FREQUENCY = 200000 # Every this many document positions
+###########
+# RECIPES #
+###########
+# All with chunk size of 1024 and Prune of 40000
+# 8.5MB: Target dictionary count: 25000
+# ?MB: Target dictionary count 10000
+
+PRUNE_FREQUENCY = 400000 # Every this many document positions
 CHUNK_SIZE = 1024 # 1KB per chunk
 
 # Global variable to hold tries and scores
@@ -99,18 +106,6 @@ def main():
           shutil.rmtree('training')
       print("Previous training data cleared.")
   
-  # Ensure the 'training' directory and its subdirectories/files exist
-  dictionaries_path = 'training/dictionaries'
-  os.makedirs(dictionaries_path, exist_ok=True)
-  os.makedirs(os.path.join(dictionaries_path, "3_words"), exist_ok=True)
-  os.makedirs(os.path.join(dictionaries_path, "2_words"), exist_ok=True)
-  os.makedirs(os.path.join(dictionaries_path, "1_word"), exist_ok=True)
-  scores_3_words_file_path = 'training/scores_3_words.pkl'
-  scores_2_words_file_path = 'training/scores_2_words.pkl'
-  scores_1_word_file_path = 'training/scores_1_word.pkl'
-
-  # Read the TXT file and process the training data
-
   # Get the total size of the file to calculate the number of iterations needed
   total_size = os.path.getsize(training_data_file)
   total_iterations = total_size // CHUNK_SIZE + (1 if total_size % CHUNK_SIZE > 0 else 0)
@@ -171,14 +166,17 @@ def main():
                       # Create a set of punctuation that signals the end of a word, excluding the internal punctuation
                       ending_punctuation = set(string.punctuation) - internal_punctuation
                       
-                      # Check if the last character of the word is in the set of ending punctuation
-                      if word[-1] in ending_punctuation:
-                          # If a word ends with an ending punctuation, add the word and break
-                          predictive_words.append(word)
+                      # Check for and remove ending punctuation from the word
+                      cleaned_word = ''.join(char for char in word if char not in ending_punctuation)
+                      
+                      # If after cleaning the word it ends with any ending punctuation, or if the original word contained ending punctuation
+                      if cleaned_word != word or any(char in ending_punctuation for char in word):
+                          predictive_words.append(cleaned_word)
                           break
                       else:
-                          # For regular words or words with internal punctuation, add the word
-                          predictive_words.append(word)
+                          # For regular words or words with internal punctuation, add the cleaned word
+                          predictive_words.append(cleaned_word)
+
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
                     

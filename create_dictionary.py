@@ -3,7 +3,7 @@ import json
 
 # Across all dictionaries, how many entry word sets total should we regularly prune the 
 # dictionary back to contain?
-TARGET_DICTIONARY_COUNT = 25000 
+TARGET_DICTIONARY_COUNT = 10000 
 
 # Of the total TARGET_DICTIONARY_COUNT, what stake in that count should each dictionary get?
 THREE_WORD_STAKE_PERCENT = 0.625
