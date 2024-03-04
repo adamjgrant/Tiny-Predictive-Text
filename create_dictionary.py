@@ -69,8 +69,6 @@ def main(trie_store):
     prune_unpopular(trie_store, "2_words", target_dictionary_count=int(TARGET_DICTIONARY_COUNT * TWO_WORD_STAKE_PERCENT))
     prune_unpopular(trie_store, "1_word", target_dictionary_count=int(TARGET_DICTIONARY_COUNT * ONE_WORD_STAKE_PERCENT))
 
-    print(trie_store["tries"]["3_words"])
-
     # Initialize the dictionary object
     dictionary = {}
 
