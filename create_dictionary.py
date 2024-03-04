@@ -89,26 +89,29 @@ def main(trie_store):
         js_file.write(js_content)
 
 def prune_unpopular(trie_store, dictionary_key, target_dictionary_count=TARGET_DICTIONARY_COUNT):
-    # Directly access scores and tries from trie_store using dictionary_key
-    scores = {k: v for k, v in trie_store['scores'].items() if k.startswith(dictionary_key)}
-
-    print(f"\nStopping to prune least popular entries down to target dictionary size of %s..." % target_dictionary_count)
-
-     # Sort scores by value in descending order and get the top_n keys
+    # Access the nested scores directly
+    scores = trie_store['scores'].get(dictionary_key, {})
+    
+    # Sort scores by value in descending order to identify top slugs
     top_slugs = sorted(scores, key=scores.get, reverse=True)[:target_dictionary_count]
+
+    existing_slugs = set(trie_store['tries'][dictionary_key].keys())
+    slugs_to_keep = set(top_slugs)
+    slugs_to_prune = existing_slugs - slugs_to_keep
+
+    # Prune the tries not in top slugs
+    for slug in slugs_to_prune:
+        del trie_store['tries'][dictionary_key][slug]
     
-    # Prune the tries and scores not in top_slugs within the specific dictionary_key
-    for slug in list(trie_store['tries'][dictionary_key].keys()):
-        if slug not in top_slugs:
-            del trie_store['tries'][dictionary_key][slug]
-            if slug in trie_store['scores']:
-                del trie_store['scores'][slug]
-    
-    # Apply branch pruning to each trie in top_slugs within the specific dictionary_key
-    for slug in top_slugs:
+    # Optionally, prune scores not associated with top slugs
+    for slug in slugs_to_prune:
+        if slug in scores:
+            del trie_store['scores'][dictionary_key][slug]
+
+    # Apply branch pruning to each trie in top slugs within the specific dictionary_key
+    for slug in slugs_to_keep:
         trie = trie_store['tries'][dictionary_key].get(slug, {})
         branch_pruner(trie)
-        # Since the trie is directly modified in-place, no need to "save" it back   
 
 if __name__ == "__main__":
     main()

@@ -75,15 +75,12 @@ def save_trie(trie, path, context_slug):
     # Assign the trie to the specified path and context_slug
     trie_store['tries'][path][context_slug] = trie
 
-
 def update_scores(path, context_slug):
-    # Construct a unique key from context_slug and path for identifying the score
-    unique_key = f"{path}:{context_slug}"
-    
-    if unique_key in trie_store['scores']:
-        trie_store['scores'][unique_key] += 1
-    else:
-        trie_store['scores'][unique_key] = 1
+    if path not in trie_store['scores']:
+        trie_store['scores'][path] = {}
+    if context_slug not in trie_store['scores'][path]:
+        trie_store['scores'][path][context_slug] = 0
+    trie_store['scores'][path][context_slug] += 1
 
 # Define a main function to orchestrate the training process
 def main():
