@@ -27,11 +27,8 @@ prune_position_marker = 0
 
 def signal_handler(sig, frame):
     global interrupted
-    print('Signal received, cleaning up...')
     interrupted = True
-    # Perform any necessary cleanup here
-    # For example, save progress to file
-    # save_progress()
+    print("Graceful exit request received.")
 
 # Register the signal handler
 signal.signal(signal.SIGINT, signal_handler)
@@ -166,8 +163,7 @@ def main():
                   f.write(str(current_position))
 
               if interrupted:
-                print("Interrupt detected, exiting loop...")
-                print("Saving data...")
+                print("Saving data. Script will terminate when done.")
                 save_trie_store(trie_store)
                 sys.exit(0)
 
