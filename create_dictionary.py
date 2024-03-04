@@ -1,10 +1,6 @@
 import os
 import json
 
-# Across all dictionaries, how many entry word sets total should we regularly prune the 
-# dictionary back to contain?
-TARGET_DICTIONARY_COUNT = 10000 
-
 # Of the total TARGET_DICTIONARY_COUNT, what stake in that count should each dictionary get?
 THREE_WORD_STAKE_PERCENT = 0.625
 TWO_WORD_STAKE_PERCENT = 0.3125
@@ -63,7 +59,7 @@ def convert_to_array(obj):
             result.append(key_with_space)
     return result
 
-def main(trie_store):
+def main(trie_store, TARGET_DICTIONARY_COUNT):
     # Path configuration is no longer needed for file paths but retained for logical separation
     # in trie_store
     output_file = 'dictionary.js'
@@ -90,7 +86,7 @@ def main(trie_store):
         js_content = f"export const dictionary = {minimized_json};"
         js_file.write(js_content)
 
-def prune_unpopular(trie_store, dictionary_key, target_dictionary_count=TARGET_DICTIONARY_COUNT):
+def prune_unpopular(trie_store, dictionary_key, target_dictionary_count):
     # Access the nested scores directly
     scores = trie_store['scores'].get(dictionary_key, {})
     

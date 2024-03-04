@@ -12,12 +12,14 @@ import pickle
 ###########
 # RECIPES #
 ###########
-# All with chunk size of 1024 and Prune of 40000
-# 8.5MB: Target dictionary count: 25000
-# ?MB: Target dictionary count 10000
+# All with chunk size of 1024
+# ?.?MB: Target dictionary count 100,000, Prune 10,000,000
+# 8.5MB: Target dictionary count 25,000,  Prune 40,000
+# 3.6MB: Target dictionary count 10,000,  Prune 40,000
 
-PRUNE_FREQUENCY = 400000 # Every this many document positions
+PRUNE_FREQUENCY = 10 * 1000 * 1000 # Every this many document positions
 CHUNK_SIZE = 1024 # 1KB per chunk
+TARGET_DICTIONARY_COUNT = 100 * 1000
 
 # Define a flag to indicate when an interrupt has been caught
 interrupted = False
@@ -144,6 +146,7 @@ def main():
   with open(training_data_file, 'r') as file:
       # Skip to the last processed position, if any
       file.seek(last_processed_position)
+      prune_position_marker = file.tell()
 
       with tqdm(initial=last_processed_position // CHUNK_SIZE, total=total_iterations, unit='chunk', desc="Processing file") as pbar:
           while True:
@@ -171,7 +174,7 @@ def main():
               if (current_position - prune_position_marker > PRUNE_FREQUENCY):
                 prune_position_marker = current_position
                 print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
-                flatten_to_dictionary(trie_store)
+                flatten_to_dictionary(trie_store, TARGET_DICTIONARY_COUNT)
 
               # Process words three at a time with shifting window
               for i in range(len(words) - 2):
