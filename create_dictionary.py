@@ -43,7 +43,7 @@ def branch_pruner(trie):
 def convert_to_array(obj):
     """
     Recursively converts dictionary objects to the specified array format, ensuring each string ends with a space.
-    This function skips any keys named '\ranked'.
+    This function skips any keys named '\ranked' and filters out empty child arrays.
     """
     result = []
     for key, value in obj.items():
@@ -54,7 +54,11 @@ def convert_to_array(obj):
         if isinstance(value, dict):
             # If the value is a dictionary, recursively process it
             child = convert_to_array(value)
-            result.append([key_with_space, child])
+            # Append [key_with_space, child] only if child is not empty
+            if child:  # This checks if child is non-empty
+                result.append([key_with_space, child])
+            else:  # If child is empty, append only the key
+                result.append(key_with_space)
         else:
             result.append(key_with_space)
     return result
