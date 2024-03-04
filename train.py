@@ -7,6 +7,7 @@ from slugify import slugify
 import string
 from create_dictionary import main as flatten_to_dictionary
 import signal
+import pickle
 
 ###########
 # RECIPES #
@@ -17,12 +18,6 @@ import signal
 
 PRUNE_FREQUENCY = 400000 # Every this many document positions
 CHUNK_SIZE = 1024 # 1KB per chunk
-
-# Global variable to hold tries and scores
-trie_store = {
-    'tries': {'3_words': {}, '2_words': {}, '1_word': {}},
-    'scores': {}
-}
 
 # Define a flag to indicate when an interrupt has been caught
 interrupted = False
@@ -40,6 +35,18 @@ def signal_handler(sig, frame):
 
 # Register the signal handler
 signal.signal(signal.SIGINT, signal_handler)
+
+def save_trie_store(trie_store):
+    with open('training/trie_store.pkl', 'wb') as f:
+        pickle.dump(trie_store, f, protocol=pickle.HIGHEST_PROTOCOL)
+    print("trie_store saved due to interruption.")
+
+def load_trie_store():
+    try:
+        with open('training/trie_store.pkl', 'rb') as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        return {'tries': {'3_words': {}, '2_words': {}, '1_word': {}}, 'scores': {}}
 
 # Define a function to slugify context words into a filename-safe string
 def _slugify(text):
@@ -64,11 +71,11 @@ def update_trie(trie, predictive_words):
         trie = trie[word]
 
 # Define a function to load or initialize the trie from memory
-def load_trie(path, context_slug):
+def load_trie(trie_store, path, context_slug):
     # Access the trie data by first navigating to the path, then the context_slug
     return trie_store['tries'].get(path, {}).get(context_slug, {})
 
-def save_trie(trie, path, context_slug):
+def save_trie(trie_store, trie, path, context_slug):
     # Check if the path exists in 'tries'; if not, create it
     if path not in trie_store['tries']:
         trie_store['tries'][path] = {}
@@ -82,7 +89,7 @@ def save_trie(trie, path, context_slug):
     # Assign the trie to the specified path and context_slug
     trie_store['tries'][path][context_slug] = trie
 
-def update_scores(path, context_slug):
+def update_scores(trie_store, path, context_slug):
     if path not in trie_store['scores']:
         trie_store['scores'][path] = {}
     if context_slug not in trie_store['scores'][path]:
@@ -99,12 +106,17 @@ def main():
         sys.exit(1)
   training_data_file = sys.argv[1]
   retain_data = '--retain' in sys.argv
-  
-  # If retain flag is not set, clear existing training data
-  if not retain_data:
+
+  # If retain flag is set, try to load existing training data
+  if retain_data:
+      trie_store = load_trie_store()
+      print("Retained data loaded.")
+  else:
+      # If not retaining data, clear existing training directory and start fresh
       if os.path.exists('training'):
           shutil.rmtree('training')
       print("Previous training data cleared.")
+      trie_store = {'tries': {'3_words': {}, '2_words': {}, '1_word': {}}, 'scores': {}}
   
   # Get the total size of the file to calculate the number of iterations needed
   total_size = os.path.getsize(training_data_file)
@@ -155,13 +167,14 @@ def main():
 
               if interrupted:
                 print("Interrupt detected, exiting loop...")
+                print("Saving data...")
+                save_trie_store(trie_store)
                 sys.exit(0)
 
               # Every now and then, prune unpopular entries.
               if (current_position - prune_position_marker > PRUNE_FREQUENCY):
                 prune_position_marker = current_position
                 print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
-                global trie_store
                 flatten_to_dictionary(trie_store)
 
               # Process words three at a time with shifting window
@@ -191,33 +204,33 @@ def main():
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
                     
-                  finish_filing(context_words, predictive_words, "3_words")
+                  finish_filing(trie_store, context_words, predictive_words, "3_words")
 
                   ## Two word alternative
                   context_words_2 = words[i+1:i+3]
                   predictive_words_2 = predictive_words[:2]
-                  finish_filing(context_words_2, predictive_words_2, "2_words")
+                  finish_filing(trie_store, context_words_2, predictive_words_2, "2_words")
 
                   ## Three word alternative
                   context_words_1 = words[i+2:i+3]
-                  finish_filing(context_words_1, predictive_words_2, "1_word")
+                  finish_filing(trie_store, context_words_1, predictive_words_2, "1_word")
   flatten_to_dictionary(trie_store) 
 
-def finish_filing(context_words, predictive_words, dictionary_subpath):
+def finish_filing(trie_store, context_words, predictive_words, dictionary_subpath):
     # Slugify the context words
     context_slug = _slugify('_'.join(context_words))
 
     # Now you can safely proceed with the trie file path
-    trie = load_trie(dictionary_subpath, context_slug)
+    trie = load_trie(trie_store, dictionary_subpath, context_slug)
     
     # Update the trie with the predictive words
     update_trie(trie, predictive_words)
     
     # Save the updated trie back to the .pkl file
-    save_trie(trie, dictionary_subpath, context_slug)
+    save_trie(trie_store, trie, dictionary_subpath, context_slug)
     
     # Update the counts in scores_3_words.pkl for the context words slug
-    update_scores(dictionary_subpath, context_slug) 
+    update_scores(trie_store, dictionary_subpath, context_slug) 
 
 # Check if the script is being run directly and call the main function
 if __name__ == "__main__":
