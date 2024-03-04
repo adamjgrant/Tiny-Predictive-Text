@@ -57,24 +57,24 @@ def update_trie(trie, predictive_words):
         trie = trie[word]
 
 # Define a function to load or initialize the trie from memory
-def load_trie(context_slug, path):
-    # Ensure the path exists in the trie_store
+def load_trie(path, context_slug):
+    # Access the trie data by first navigating to the path, then the context_slug
+    return trie_store['tries'].get(path, {}).get(context_slug, {})
+
+def save_trie(trie, path, context_slug):
+    # Check if the path exists in 'tries'; if not, create it
     if path not in trie_store['tries']:
-        return {}
+        trie_store['tries'][path] = {}
     
-    # Access the specific trie using the category and then the context_slug
-    path_trie = trie_store['tries'][path]
-    return path_trie.get(context_slug, {})
+    # Now, path exists for sure; check for context_slug under this path
+    # This step might be redundant if you're always going to assign a new trie,
+    # but it's crucial if you're updating or merging with existing data.
+    if context_slug not in trie_store['tries'][path]:
+        trie_store['tries'][path][context_slug] = {}
 
+    # Assign the trie to the specified path and context_slug
+    trie_store['tries'][path][context_slug] = trie
 
-def save_trie(trie, context_slug, path):
-    if context_slug not in trie_store['tries']:
-        trie_store['tries'][context_slug] = {}
-    if path not in trie_store['tries'][context_slug]:
-        trie_store['tries'][context_slug][path] = {}
-    
-    # Assuming 'category' is equivalent to 'path' and represents either '3_words', '2_words', or '1_word'
-    trie_store['tries'][context_slug][path] = trie
 
 def update_scores(context_slug, path):
     # Construct a unique key from context_slug and path for identifying the score
@@ -201,13 +201,13 @@ def finish_filing(context_words, predictive_words, scores_file_path, dictionary_
     context_slug = _slugify('_'.join(context_words))
 
     # Now you can safely proceed with the trie file path
-    trie = load_trie(context_slug, dictionary_subpath)
+    trie = load_trie(dictionary_subpath, context_slug)
     
     # Update the trie with the predictive words
     update_trie(trie, predictive_words)
     
     # Save the updated trie back to the .pkl file
-    save_trie(trie, context_slug, dictionary_subpath)
+    save_trie(trie, dictionary_subpath, context_slug)
     
     # Update the counts in scores_3_words.pkl for the context words slug
     update_scores(context_slug, scores_file_path) 
