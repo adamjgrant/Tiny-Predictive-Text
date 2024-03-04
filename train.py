@@ -110,6 +110,17 @@ def main():
   total_size = os.path.getsize(training_data_file)
   total_iterations = total_size // CHUNK_SIZE + (1 if total_size % CHUNK_SIZE > 0 else 0)
 
+  # Ensure the 'training' directory and its subdirectories/files exist
+  dictionaries_path = 'training/dictionaries'
+  os.makedirs(dictionaries_path, exist_ok=True)
+  os.makedirs(os.path.join(dictionaries_path, "3_words"), exist_ok=True)
+  os.makedirs(os.path.join(dictionaries_path, "2_words"), exist_ok=True)
+  os.makedirs(os.path.join(dictionaries_path, "1_word"), exist_ok=True)
+
+  # Get the total size of the file to calculate the number of iterations needed
+  total_size = os.path.getsize(training_data_file)
+  total_iterations = total_size // CHUNK_SIZE + (1 if total_size % CHUNK_SIZE > 0 else 0)
+
   # Define a file to store the progress
   progress_file = 'training/processing_progress.txt'
 
