@@ -76,7 +76,7 @@ def main(trie_store):
     # Initialize the dictionary object
     dictionary = {}
 
-    print("Getting all dictionaries...")
+    print("Getting all dictionaries and re-minting a new dictionary.js...")
     # Iterate over trie_store's sub-keys instead of .pkl files
     for dictionary_key in ["3_words", "2_words", "1_word"]:
         for slug, trie in trie_store['tries'].get(dictionary_key, {}).items():

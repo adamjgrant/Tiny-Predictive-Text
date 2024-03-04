@@ -190,7 +190,8 @@ def main():
                   ## Three word alternative
                   context_words_1 = words[i+2:i+3]
                   finish_filing(context_words_1, predictive_words_2, "1_word")
-  
+  flatten_to_dictionary(trie_store) 
+
 def finish_filing(context_words, predictive_words, dictionary_subpath):
     # Slugify the context words
     context_slug = _slugify('_'.join(context_words))
