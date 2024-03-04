@@ -76,9 +76,9 @@ def save_trie(trie, path, context_slug):
     trie_store['tries'][path][context_slug] = trie
 
 
-def update_scores(context_slug, path):
+def update_scores(path, context_slug):
     # Construct a unique key from context_slug and path for identifying the score
-    unique_key = f"{context_slug}:{path}"
+    unique_key = f"{path}:{context_slug}"
     
     if unique_key in trie_store['scores']:
         trie_store['scores'][unique_key] += 1
@@ -185,18 +185,18 @@ def main():
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
                     
-                  finish_filing(context_words, predictive_words, scores_3_words_file_path, "3_words")
+                  finish_filing(context_words, predictive_words, "3_words")
 
                   ## Two word alternative
                   context_words_2 = words[i+1:i+3]
                   predictive_words_2 = predictive_words[:2]
-                  finish_filing(context_words_2, predictive_words_2, scores_2_words_file_path, "2_words")
+                  finish_filing(context_words_2, predictive_words_2, "2_words")
 
                   ## Three word alternative
                   context_words_1 = words[i+2:i+3]
-                  finish_filing(context_words_1, predictive_words_2, scores_1_word_file_path, "1_word")
+                  finish_filing(context_words_1, predictive_words_2, "1_word")
   
-def finish_filing(context_words, predictive_words, scores_file_path, dictionary_subpath):
+def finish_filing(context_words, predictive_words, dictionary_subpath):
     # Slugify the context words
     context_slug = _slugify('_'.join(context_words))
 
@@ -210,7 +210,7 @@ def finish_filing(context_words, predictive_words, scores_file_path, dictionary_
     save_trie(trie, dictionary_subpath, context_slug)
     
     # Update the counts in scores_3_words.pkl for the context words slug
-    update_scores(context_slug, scores_file_path) 
+    update_scores(dictionary_subpath, context_slug) 
 
 # Check if the script is being run directly and call the main function
 if __name__ == "__main__":

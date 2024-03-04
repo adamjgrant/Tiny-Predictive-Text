@@ -69,13 +69,14 @@ def main(trie_store):
     prune_unpopular(trie_store, "2_words", target_dictionary_count=int(TARGET_DICTIONARY_COUNT * TWO_WORD_STAKE_PERCENT))
     prune_unpopular(trie_store, "1_word", target_dictionary_count=int(TARGET_DICTIONARY_COUNT * ONE_WORD_STAKE_PERCENT))
 
+    print(trie_store["tries"]["3_words"])
+
     # Initialize the dictionary object
     dictionary = {}
 
     print("Getting all dictionaries...")
     # Iterate over trie_store's sub-keys instead of .pkl files
     for dictionary_key in ["3_words", "2_words", "1_word"]:
-        print(trie_store["tries"]["3_words"])
         for slug, trie in trie_store['tries'].get(dictionary_key, {}).items():
             # Directly use trie from trie_store for conversion
             dictionary[slug] = convert_to_array(trie)
