@@ -58,16 +58,22 @@ def update_trie(trie, predictive_words):
 
 # Define a function to load or initialize the trie from memory
 def load_trie(context_slug, path):
-    # Access the sub-trie directly using the path
-    context_trie = trie_store['tries'].get(context_slug, {})
-    return context_trie.get(path, {})
+    # Ensure the path exists in the trie_store
+    if path not in trie_store['tries']:
+        return {}
+    
+    # Access the specific trie using the category and then the context_slug
+    path_trie = trie_store['tries'][path]
+    return path_trie.get(context_slug, {})
+
 
 def save_trie(trie, context_slug, path):
-    # Ensure the base structure for the context_slug exists
     if context_slug not in trie_store['tries']:
         trie_store['tries'][context_slug] = {}
+    if path not in trie_store['tries'][context_slug]:
+        trie_store['tries'][context_slug][path] = {}
     
-    # Directly save the trie at the specified path under the context_slug
+    # Assuming 'category' is equivalent to 'path' and represents either '3_words', '2_words', or '1_word'
     trie_store['tries'][context_slug][path] = trie
 
 def update_scores(context_slug, path):
@@ -139,7 +145,7 @@ def main():
               words = row.split()
 
               # Every now and then save our progress.
-              print(f"Saving the current position of %s" % current_position)
+              # print(f"Saving the current position of %s" % current_position)
               # Save the current progress (file position)
               with open(progress_file, 'w') as f:
                   f.write(str(current_position))

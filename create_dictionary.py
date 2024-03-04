@@ -75,6 +75,7 @@ def main(trie_store):
     print("Getting all dictionaries...")
     # Iterate over trie_store's sub-keys instead of .pkl files
     for dictionary_key in ["3_words", "2_words", "1_word"]:
+        print(trie_store["tries"]["3_words"])
         for slug, trie in trie_store['tries'].get(dictionary_key, {}).items():
             # Directly use trie from trie_store for conversion
             dictionary[slug] = convert_to_array(trie)
