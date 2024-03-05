@@ -13,9 +13,9 @@ import pickle
 # RECIPES #
 ###########
 # All with chunk size of 1024
-# ?.?MB: Target dictionary count 100,000,   Prune 1,000,000
-# 8.5MB: Target dictionary count 25,000,    Prune 10,000,000
-# 5.4MB: Target dictionary count 10,000,    Prune 10,000,000
+# 33.7MB: Target dictionary count 100,000,   Prune 1,000,000
+# 8.5MB:  Target dictionary count 25,000,    Prune 10,000,000
+# 5.4MB:  Target dictionary count 10,000,    Prune 10,000,000
 
 PRUNE_FREQUENCY = 1000 * 1000 # Every this many document positions
 CHUNK_SIZE = 1024 # 1KB per chunk
