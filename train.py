@@ -128,7 +128,6 @@ def main():
       if os.path.exists('training'):
           shutil.rmtree('training')
       print("Previous training data cleared.")
-      trie_store = {'tries': {'3_words': {}, '2_words': {}, '1_word': {}}, 'scores': {}}
   
   # Get the total size of the file to calculate the number of iterations needed
   total_size = os.path.getsize(training_data_file)
@@ -194,7 +193,7 @@ def main():
                       internal_punctuation = {"'", "-"}
                       additional_punctuation = {"“", "”", "–", "—"}
                       # Create a set of punctuation that signals the end of a word, excluding the internal punctuation
-                      ending_punctuation = set(string.punctuation) - internal_punctuation # + additional_punctuation
+                      ending_punctuation = (set(string.punctuation) | additional_punctuation) - internal_punctuation
                       
                       # Check for and remove ending punctuation from the word
                       cleaned_word = ''.join(char for char in word if char not in ending_punctuation)
