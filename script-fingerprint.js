@@ -1,5 +1,5 @@
-import { dictionary_anchors } from './dictionary-anchors.js';
-import { dictionary_properties } from './dictionary-properties.js';
+import { dictionary_anchors } from './dictionary-anchors-10K.js';
+import { dictionary_properties } from './dictionary-properties-10K.js';
 
 const MED_SCORE_THRESHOLD = 6;
 const HIGH_SCORE_THRESHOLD = 4;
@@ -91,7 +91,8 @@ const clear_suggestion = () => {
 }
 
 const get_anchor = () => {
-  return slugify(entry.value.trim().split(" ").reverse()[0], "_");
+  const last_word = entry.value.trim().split(" ").reverse()[0];
+  return slugify(last_word, "_");
 }
 
 const five_words_typed = () => {
@@ -159,7 +160,7 @@ const calculateSimilarity = (inputProps, dictProps) => {
   }
 
   score_el.innerText = score;
-  anchor_el.innerText = get_anchor();
+  anchor_el.innerHTML = get_anchor();
   set_suggested_word_class(score);
   return score;
 };
