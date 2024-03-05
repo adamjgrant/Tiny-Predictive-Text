@@ -1,12 +1,16 @@
 import { dictionary_fingerprint as dictionary } from './dictionary-fingerprint.js';
 
+const SIMILARITY_THRESHOLD = 8.0
+
 let suggested_text_on_deck = "";
-const [entry, suggestion, uwr_el, vcr_el, wld_el] = [
+const [entry, suggestion, uwr_el, vcr_el, wld_el, score_el, anchor_el] = [
   document.getElementById("entry"),
   document.getElementById("suggestion"),
   document.getElementById("uwr"),
   document.getElementById("vcr"),
   document.getElementById("wld"),
+  document.getElementById("score"),
+  document.getElementById("anchor")
 ];
 
 const get_word = (word=entry.value) => {
@@ -74,10 +78,14 @@ const clear_suggestion = () => {
   suggested_text_on_deck = "";
 }
 
+const get_anchor = () => {
+  return slugify(entry.value.trim().split(" ").reverse()[0], "_");
+}
+
 const compute_properties = (string) => {
   const words = string.toLowerCase().match(/\b(\w+)\b/g) || [];
   const uniqueWords = new Set(words);
-  const uwr = uniqueWords.size / (words.length + 1.00) || 0.0;
+  const uwr = uniqueWords.size / (words.length * 1.00) || 0.0;
 
   const vowels = string.match(/[aeiou]/gi) || [];
   const consonants = string.match(/[bcdfghjklmnpqrstvwxyz]/gi) || [];
@@ -95,7 +103,7 @@ const compute_properties = (string) => {
 
   // Normalize counts to frequencies
   for (const key in wld) {
-    wld[key] = wld[key] / words.length || 0;
+    wld[key] = wld[key] || 0;
   }
 
   uwr_el.innerText = uwr;
@@ -106,15 +114,46 @@ const compute_properties = (string) => {
 }
 
 const calculateSimilarity = (inputProps, dictProps) => {
+  const use_uwr = false;
+  const use_vcr = true;
+  const use_wld = true;
+  const use_anchor = true;
+  let total_possible = 0
   let score = 0;
   // Compare uwr
-  score += Math.abs(inputProps.uwr - dictProps.uwr);
+  if (use_uwr) {
+    score += Math.abs(inputProps.uwr - dictProps.uwr);
+    total_possible += 1;
+  }
+
   // Compare vcr
-  score += Math.abs(inputProps.vcr - dictProps.vcr);
+  if (use_vcr) {
+    score += Math.abs(inputProps.vcr - dictProps.vcr);
+    total_possible += 1;
+  }
+
   // Compare wld
-  Object.keys(inputProps.wld).forEach(key => {
-    score += Math.abs((inputProps.wld[key] || 0) - (dictProps.wld[key] || 0));
-  });
+  if (use_wld) {
+    Object.keys(inputProps.wld).forEach(key => {
+      score += Math.abs((inputProps.wld[key] || 0) - (dictProps.wld[key] || 0));
+      total_possible += 1;
+    });
+  }
+
+  const anchor = get_anchor();
+  // Compare anchors
+  if (use_anchor && dictProps.anc && anchor) {
+    if (Object.keys(dictProps.anc).includes(anchor)) {
+      console.log("Anchor found", anchor)
+      // If the anchor is found, adjust the score as needed
+      // Example: Reduce score as anchor match is a positive indicator
+      score -= 100; // Adjust score based on your scoring system
+      score_el.innerText = score;
+    }
+  }
+
+  score_el.innerText = score;
+  anchor_el.innerText = anchor;
   return score;
 };
 
@@ -135,7 +174,6 @@ const get_suggestion = (string) => {
   // Optionally, you can return the completion of the closest match
   return closestMatch ? dictionary[closestMatch].completion : null;
 };
-
 
 const use_suggestion = (event=undefined) => {
   const space = entry.value.split("").reverse()[0] === " " ? "" : " ";
@@ -167,13 +205,11 @@ const cut_after_punctuation = (word_parts, delimiter) => {
 const find_a_suggestion = (word_parts) => {
   let suggested_word;
 
-  word_parts = cut_after_punctuation(word_parts, ".");
-  word_parts = cut_after_punctuation(word_parts, ",");
+  // word_parts = cut_after_punctuation(word_parts, ".");
+  // word_parts = cut_after_punctuation(word_parts, ",");
 
-  let word = get_word(word_parts.join(" "));
-  suggested_word = get_suggestion(word);
+  suggested_word = get_suggestion(word_parts.join(" "));
   if (suggested_word !== "") {
-    set_suggested_word_class(word_parts);
     return suggested_word
   }
   word_parts.shift();

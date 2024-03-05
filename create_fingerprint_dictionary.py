@@ -2,21 +2,38 @@ import os
 import json
 
 def main(trie_store, TARGET_DICTIONARY_COUNT):
-    # Path configuration is no longer needed for file paths but retained for logical separation
-    # in trie_store
-    output_file = 'dictionary-fingerprint.js'
+    output_file_anchors = 'dictionary-anchors.js'
+    output_file_properties = 'dictionary-properties.js'
 
-    # Prune the dictionary first
-    prune_unpopular(trie_store, target_dictionary_count=TARGET_DICTIONARY_COUNT)
+    # Initialize containers for the new structures
+    anchors = {}
+    properties = {}
 
-    # Initialize the dictionary object
-    dictionary = trie_store["fingerprints"]
+    # Iterate through each item in trie_store["fingerprints"]
+    for context_group, info in trie_store["fingerprints"].items():
+        # Process anchors
+        for anchor_word in info.get("anc", {}).keys():
+            # If the anchor_word is not in anchors, initialize it with an empty list
+            if anchor_word not in anchors:
+                anchors[anchor_word] = []
+            # Append the context_group to the anchor_word's list
+            anchors[anchor_word].append(context_group)
 
-    print(f"Dictionary width is {len(dictionary.keys())}")
-    # Write the dictionary object to dictionary.js in the desired format
-    with open(output_file, 'w') as js_file:
-        minimized_json = json.dumps(dictionary, separators=(',', ':'))
-        js_content = f"export const dictionary_fingerprint = {minimized_json};"
+        # Process properties excluding 'anc'
+        properties[context_group] = {k: v for k, v in info.items() if k != "anc"}
+
+    print(f"Dictionary width is {len(properties.keys())}")
+
+    # Write the anchors object to dictionary-anchors.js in the desired format
+    with open(output_file_anchors, 'w') as js_file:
+        minimized_json = json.dumps(anchors, separators=(',', ':'))
+        js_content = f"export const dictionary_anchors = {minimized_json};"
+        js_file.write(js_content)
+
+    # Write the properties object to dictionary-properties.js in the desired format
+    with open(output_file_properties, 'w') as js_file:
+        minimized_json = json.dumps(properties, separators=(',', ':'))
+        js_content = f"export const dictionary_properties = {minimized_json};"
         js_file.write(js_content)
 
 def prune_unpopular(trie_store, target_dictionary_count):

@@ -11,8 +11,9 @@ import pickle
 
 PRUNE_FREQUENCY = 10 * 1000 * 1000 # Every this many document positions
 CHUNK_SIZE = 1024 # 1KB per chunk
-TARGET_DICTIONARY_COUNT = 25 * 1000
+TARGET_DICTIONARY_COUNT = 100 * 1000
 CONTEXT_WORD_LENGTH = 10
+MEASUREMENT_DECIMAL_PLACES = 4
 
 # Define a flag to indicate when an interrupt has been caught
 interrupted = False
@@ -63,7 +64,7 @@ def vowel_to_consonant_ratio(phrase, existing_vcr, instances):
     else:
         average_vcr = new_vcr
     
-    return round(average_vcr, 3)
+    return round(average_vcr, MEASUREMENT_DECIMAL_PLACES)
 
 def word_length_distribution(string, existing_wld, instances):
     words = string.split()
@@ -92,6 +93,7 @@ def word_length_distribution(string, existing_wld, instances):
                 existing_wld[category] = ((existing_wld[category] * (instances - 1)) + count) / instances
             else:
                 existing_wld[category] = count / instances
+            existing_wld[category] = round(existing_wld[category], MEASUREMENT_DECIMAL_PLACES)
         average_wld = existing_wld
     else:
         average_wld = {category: count / instances for category, count in new_distribution.items()}
@@ -110,7 +112,7 @@ def unique_word_ratio(string, existing_uwr, instances):
     else:
         average_uwr = new_uwr
     
-    return round(average_uwr, 3)
+    return round(average_uwr, MEASUREMENT_DECIMAL_PLACES)
 
 # Define a function to load or initialize the trie from memory
 def load_trie(trie_store, predictive_slug):
@@ -118,7 +120,7 @@ def load_trie(trie_store, predictive_slug):
     return trie_store["fingerprints"].get(predictive_slug, {})
 
 # Process the values for the trie
-def process_trie(trie, actual_phrase, completion):
+def process_trie(trie, actual_phrase, completion, anchor_word):
   # Look at the incoming trie. If it has existing values we should process them
   # with the ones we compute on the incoming context words. (Avg over inst)
   # Design:
@@ -128,21 +130,34 @@ def process_trie(trie, actual_phrase, completion):
   #     "completion": "what I mean",  (Everything below is about the 10* words found before this)
   #     "vcr": 0.72,              (Vowel to consonant ratio)
   #     "wld": [4,2,3,1],         (Word length distribution, 3-, 4-, 5- and >5- length)
-  #     "uwr": 0.98               (Unique word ratio) 
-  #     "inst": 4                 (Number of instances found)
+  #     "uwr": 0.98,              (Unique word ratio) 
+  #     "inst": 4,                (Number of instances found)
+  #     "anc": ["is"]             (Words found just before this one)
   #   },
   # }
   #
   # *On average, an English sentence is 15-20 words long, so 13 (10+3) length is reasonable.
-  instances = trie.get("inst", 0)
-  instances += 1
+  instances = trie.get("inst", 0) + 1
+
+  # Retrieve the "anc" dictionary, default to an empty dict if not found
+  anc = trie.get("anc", {})
+
+  # Increment the score for the anchor word, or initialize it to 1 if it doesn't exist
+  anc[anchor_word] = anc.get(anchor_word, 0) + 1
+
+  # Sort the anc dictionary by score in descending order and keep the top 10 items
+  sorted_anc = dict(sorted(anc.items(), key=lambda item: item[1], reverse=True)[:10])
+
+  # Update the trie with the new information
   trie.update({
-    "completion": completion,
-    "vcr": vowel_to_consonant_ratio(actual_phrase, trie.get("vcr", None), instances),
-    "wld": word_length_distribution(actual_phrase, trie.get("wld", None), instances),
-    "uwr": unique_word_ratio(actual_phrase, trie.get("uwr", None), instances),
-    "inst": instances 
+      "completion": completion,
+      "vcr": vowel_to_consonant_ratio(actual_phrase, trie.get("vcr", None), instances),
+      "wld": word_length_distribution(actual_phrase, trie.get("wld", None), instances),
+      "uwr": unique_word_ratio(actual_phrase, trie.get("uwr", None), instances),
+      "inst": instances,
+      "anc": sorted_anc  # Update the sorted anc dictionary back to trie
   })
+
 
 def save_trie(trie_store, trie, predictive_slug):
     # Assign the trie to the specified path and context_slug
@@ -237,6 +252,7 @@ def main():
               for i in range(len(words) - (CONTEXT_WORD_LENGTH - 1)):  # Adjust based on CONTEXT_WORD_LENGTH
                   context_words = words[i:i + CONTEXT_WORD_LENGTH]  # Use CONTEXT_WORD_LENGTH for context window
                   predictive_words = []
+                  anchor_word = slugify(context_words[-1])
 
                   # Determine predictive words, starting right after the context window, up to three words
                   for j in range(i + CONTEXT_WORD_LENGTH, min(i + CONTEXT_WORD_LENGTH + 3, len(words))):
@@ -257,11 +273,11 @@ def main():
                   if not predictive_words:
                       continue
                     
-                  finish_filing(trie_store, context_words, predictive_words)
+                  finish_filing(trie_store, context_words, predictive_words, anchor_word)
 
   flatten_to_dictionary(trie_store, TARGET_DICTIONARY_COUNT) 
 
-def finish_filing(trie_store, context_words, predictive_words):
+def finish_filing(trie_store, context_words, predictive_words, anchor_word):
     # Slugify the context words
     completion = " ".join(predictive_words)
     predictive_slug = _slugify(completion)
@@ -271,7 +287,7 @@ def finish_filing(trie_store, context_words, predictive_words):
     trie = load_trie(trie_store, predictive_slug)
     
     # With that entry, start processing the properties of the context words
-    process_trie(trie, actual_phrase, completion)
+    process_trie(trie, actual_phrase, completion, anchor_word)
     
     # Save the updated trie back to the .pkl file
     save_trie(trie_store, trie, predictive_slug)
