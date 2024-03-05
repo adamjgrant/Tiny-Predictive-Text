@@ -5,13 +5,13 @@ import shutil
 from tqdm import tqdm
 from slugify import slugify
 import string
-from create_dictionary import main as flatten_to_dictionary
+from create_fingerprint_dictionary import main as flatten_to_dictionary
 import signal
 import pickle
 
-PRUNE_FREQUENCY = 1 * 1000 * 1000 # Every this many document positions
+PRUNE_FREQUENCY = 10 * 1000 * 1000 # Every this many document positions
 CHUNK_SIZE = 1024 # 1KB per chunk
-TARGET_DICTIONARY_COUNT = 250 * 1000
+TARGET_DICTIONARY_COUNT = 25 * 1000
 CONTEXT_WORD_LENGTH = 10
 
 # Define a flag to indicate when an interrupt has been caught
@@ -34,13 +34,12 @@ def save_trie_store(trie_store):
     print("trie_fingerprint_store saved due to interruption.")
 
 DEFAULT_TRIE_STORE ={ "fingerprints": {}, "scores": {}} 
-#
-# (Scores)
-# {
-#   "what_i_mean": 12, ...      (Number of times we found it)
-# }
 
 def load_trie_store():
+    # (Scores)
+    # {
+    #   "what_i_mean": 12, ...      (Number of times we found it)
+    # }
     try:
         with open('training/trie_fingerprint_store.pkl', 'rb') as f:
             return pickle.load(f)
@@ -64,7 +63,7 @@ def vowel_to_consonant_ratio(phrase, existing_vcr, instances):
     else:
         average_vcr = new_vcr
     
-    return average_vcr
+    return round(average_vcr, 3)
 
 def word_length_distribution(string, existing_wld, instances):
     words = string.split()
@@ -111,7 +110,7 @@ def unique_word_ratio(string, existing_uwr, instances):
     else:
         average_uwr = new_uwr
     
-    return average_uwr
+    return round(average_uwr, 3)
 
 # Define a function to load or initialize the trie from memory
 def load_trie(trie_store, predictive_slug):
