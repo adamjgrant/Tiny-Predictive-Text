@@ -9,6 +9,8 @@ def main(trie_store, TARGET_DICTIONARY_COUNT):
     anchors = {}
     properties = {}
 
+    prune_unpopular(trie_store, TARGET_DICTIONARY_COUNT)
+
     # Iterate through each item in trie_store["fingerprints"]
     for context_group, info in trie_store["fingerprints"].items():
         # Process anchors
