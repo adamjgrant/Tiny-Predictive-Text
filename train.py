@@ -191,7 +191,7 @@ def main():
                       word = words[j]
                       # Define a set of punctuation that is allowed within a word
                       internal_punctuation = {"'", "-"}
-                      additional_punctuation = {"“", "”"}
+                      additional_punctuation = {"“", "”", "–", "—"}
                       # Create a set of punctuation that signals the end of a word, excluding the internal punctuation
                       ending_punctuation = set(string.punctuation) - internal_punctuation + additional_punctuation
                       
