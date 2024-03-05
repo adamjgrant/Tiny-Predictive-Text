@@ -119,14 +119,14 @@ def load_trie(trie_store, predictive_slug):
     return trie_store["fingerprints"].get(predictive_slug, {})
 
 # Process the values for the trie
-def process_trie(trie, actual_phrase):
+def process_trie(trie, actual_phrase, completion):
   # Look at the incoming trie. If it has existing values we should process them
   # with the ones we compute on the incoming context words. (Avg over inst)
   # Design:
   # (Fingerprints)
   # {
   #   "what_i_mean": {
-  #     "phrase": "what I mean",  (Everything below is about the 10* words found before this)
+  #     "completion": "what I mean",  (Everything below is about the 10* words found before this)
   #     "vcr": 0.72,              (Vowel to consonant ratio)
   #     "wld": [4,2,3,1],         (Word length distribution, 3-, 4-, 5- and >5- length)
   #     "uwr": 0.98               (Unique word ratio) 
@@ -135,14 +135,13 @@ def process_trie(trie, actual_phrase):
   # }
   #
   # *On average, an English sentence is 15-20 words long, so 13 (10+3) length is reasonable.
-  _actual_phrase = trie.get("phrase", actual_phrase)
   instances = trie.get("inst", 0)
   instances += 1
   trie.update({
-    "phrase": _actual_phrase,
-    "vcr": vowel_to_consonant_ratio(_actual_phrase, trie.get("vcr", None), instances),
-    "wld": word_length_distribution(_actual_phrase, trie.get("wld", None), instances),
-    "uwr": unique_word_ratio(_actual_phrase, trie.get("uwr", None), instances),
+    "completion": completion,
+    "vcr": vowel_to_consonant_ratio(actual_phrase, trie.get("vcr", None), instances),
+    "wld": word_length_distribution(actual_phrase, trie.get("wld", None), instances),
+    "uwr": unique_word_ratio(actual_phrase, trie.get("uwr", None), instances),
     "inst": instances 
   })
 
@@ -265,14 +264,15 @@ def main():
 
 def finish_filing(trie_store, context_words, predictive_words):
     # Slugify the context words
-    predictive_slug = _slugify('_'.join(predictive_words))
+    completion = " ".join(predictive_words)
+    predictive_slug = _slugify(completion)
     actual_phrase = " ".join(context_words)
 
     # Get or create the dict entry for this predictive slug
     trie = load_trie(trie_store, predictive_slug)
     
     # With that entry, start processing the properties of the context words
-    process_trie(trie, actual_phrase)
+    process_trie(trie, actual_phrase, completion)
     
     # Save the updated trie back to the .pkl file
     save_trie(trie_store, trie, predictive_slug)
