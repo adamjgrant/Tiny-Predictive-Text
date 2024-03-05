@@ -14,12 +14,12 @@ import pickle
 ###########
 # All with chunk size of 1024
 # 33.7MB: Target dictionary count 100,000,   Prune 1,000,000
-# 8.5MB:  Target dictionary count 25,000,    Prune 10,000,000
+# 11.9MB: Target dictionary count 25,000,    Prune 10,000,000
 # 5.4MB:  Target dictionary count 10,000,    Prune 10,000,000
 
-PRUNE_FREQUENCY = 1000 * 1000 # Every this many document positions
+PRUNE_FREQUENCY = 10 * 1000 * 1000 # Every this many document positions
 CHUNK_SIZE = 1024 # 1KB per chunk
-TARGET_DICTIONARY_COUNT = 100 * 1000
+TARGET_DICTIONARY_COUNT = 25 * 1000
 
 # Define a flag to indicate when an interrupt has been caught
 interrupted = False
@@ -193,7 +193,7 @@ def main():
                       internal_punctuation = {"'", "-"}
                       additional_punctuation = {"“", "”", "–", "—"}
                       # Create a set of punctuation that signals the end of a word, excluding the internal punctuation
-                      ending_punctuation = set(string.punctuation) - internal_punctuation + additional_punctuation
+                      ending_punctuation = set(string.punctuation) - internal_punctuation # + additional_punctuation
                       
                       # Check for and remove ending punctuation from the word
                       cleaned_word = ''.join(char for char in word if char not in ending_punctuation)
