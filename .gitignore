@@ -2,5 +2,9 @@ training
 train.csv
 train.txt
 train.bak.txt
+dictionary.js
+dictionary-fingerprint.js
+dictionary-anchors.js
+dictionary-properties.js
 .DS_Store
 __pycache__
