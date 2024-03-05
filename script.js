@@ -1,7 +1,7 @@
 import { Tree } from './permute.js';
-import { dictionary } from './dictionary-5.4MB.js';
-// import { dictionary } from './dictionary-11.9MB.js';
-// import { dictionary } from './dictionary-33.7MB.js';
+import { dictionary } from './dictionary-10K.js';
+// import { dictionary } from './dictionary-25K.js';
+// import { dictionary } from './dictionary-100K.js';
 
 let suggested_text_on_deck = "";
 const [entry, suggestion] = [
