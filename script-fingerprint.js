@@ -1,6 +1,9 @@
 import { dictionary_anchors } from './dictionary-anchors.js';
 import { dictionary_properties } from './dictionary-properties.js';
 
+const MED_SCORE_THRESHOLD = 6;
+const HIGH_SCORE_THRESHOLD = 4;
+
 let suggested_text_on_deck = [];
 const [entry, suggestion, uwr_el, vcr_el, wld_el, score_el, anchor_el] = [
   document.getElementById("entry"),
@@ -16,6 +19,14 @@ const get_word = (word=entry.value) => {
   let last_three_words = word.trim().split(" ");
   return slugify(last_three_words.slice(-3), "_");
 };
+
+const set_suggested_word_class = (score) => {
+  suggestion.classList.remove("two_word");
+  suggestion.classList.remove("three_word");
+  if (score < HIGH_SCORE_THRESHOLD) return suggestion.classList.add("three_word");
+  if (score < MED_SCORE_THRESHOLD) return suggestion.classList.add("two_word");
+  return
+}
 
 function slugify(text, separator) {
   text = text.toString().toLowerCase().trim()
@@ -75,10 +86,18 @@ function slugify(text, separator) {
 const clear_suggestion = () => {
   suggestion.innerHTML = "...";
   suggested_text_on_deck = [];
+  suggestion.classList.remove("two_word");
+  suggestion.classList.remove("three_word");
 }
 
 const get_anchor = () => {
   return slugify(entry.value.trim().split(" ").reverse()[0], "_");
+}
+
+const five_words_typed = () => {
+  let last_sentence = entry.value.trim().split(".").reverse()[0];
+  let last_sentence_parts = last_sentence.split(" ").filter(x => x !== "");
+  return last_sentence_parts.length > 4
 }
 
 const compute_properties = (string) => {
@@ -113,10 +132,9 @@ const compute_properties = (string) => {
 }
 
 const calculateSimilarity = (inputProps, dictProps) => {
-  const use_uwr = true;
+  const use_uwr = false;
   const use_vcr = true;
   const use_wld = true;
-  const use_anchor = true;
   let total_possible = 0
   let score = 0;
   // Compare uwr
@@ -131,6 +149,7 @@ const calculateSimilarity = (inputProps, dictProps) => {
     total_possible += 1;
   }
 
+
   // Compare wld
   if (use_wld) {
     Object.keys(inputProps.wld).forEach(key => {
@@ -139,20 +158,9 @@ const calculateSimilarity = (inputProps, dictProps) => {
     });
   }
 
-  const anchor = get_anchor();
-  // Compare anchors
-  if (use_anchor && dictProps.anc && anchor) {
-    if (Object.keys(dictProps.anc).includes(anchor)) {
-      console.log("Anchor found", anchor)
-      // If the anchor is found, adjust the score as needed
-      // Example: Reduce score as anchor match is a positive indicator
-      score -= 100; // Adjust score based on your scoring system
-      score_el.innerText = score;
-    }
-  }
-
   score_el.innerText = score;
-  anchor_el.innerText = anchor;
+  anchor_el.innerText = get_anchor();
+  set_suggested_word_class(score);
   return score;
 };
 
@@ -180,22 +188,24 @@ const get_suggestion = (string) => {
 
 const use_suggestion = (event=undefined) => {
   const space = entry.value.split("").reverse()[0] === " " ? "" : " ";
-  entry.value = entry.value + space + suggested_text_on_deck.shift();
+  const suggestion = suggested_text_on_deck.shift();
+  if (!suggestion) return;
+  entry.value = entry.value + space + suggestion + " ";
   clear_suggestion();
 }
 
-entry.addEventListener("keyup", (event) => {
+entry.addEventListener("keydown", (event) => {
   if (event.key === "Tab") {
     event.preventDefault();
     use_suggestion();
   }
 });
 
-entry.addEventListener("keyup", (event) => {
+entry.addEventListener("keydown", (event) => {
   if (event.key === "Shift") {
     event.preventDefault();
     suggested_text_on_deck.push(suggested_text_on_deck.shift());
-    suggestion.innerHTML = suggested_text_on_deck[0];
+    suggestion.innerHTML = suggested_text_on_deck[0] || "...";
   }
 });
 
@@ -204,10 +214,6 @@ suggestion.addEventListener("click", () => {
   entry.focus();
   check_for_suggestion();
 });
-
-const set_suggested_word_class = (word_parts) => {
-  return // TODO Needed?
-}
 
 const cut_after_punctuation = (word_parts, delimiter) => {
   let split_up = word_parts.join(" ").split(delimiter).pop().trim();
@@ -242,8 +248,9 @@ const check_for_suggestion = () => {
   suggestion.innerHTML = suggested_words[0];
 }
 
-entry.addEventListener("keydown", (e) => {
-  if (e.key !== "Tab" && e.key != "Shift") {
+entry.addEventListener("keyup", (e) => {
+  if (e.key != "Shift") {
+    if (!five_words_typed()) return clear_suggestion();
     check_for_suggestion();
   }
 });
