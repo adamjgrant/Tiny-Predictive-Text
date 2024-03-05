@@ -3,6 +3,16 @@ A demonstration of predictive text without an LLM, using permy.link
 
 [Check it out](https://adamgrant.info/tiny-predictive-text)
 
+## Usage
+In script.js uncomment only the dictionary size you want to use. The larger the dictionary, the larger the file and will impact load times.
+
+```javascript
+import { dictionary } from './dictionary-10K.js';
+// import { dictionary } from './dictionary-25K.js';
+// import { dictionary } from './dictionary-100K.js';
+// import { dictionary } from './dictionary-250K.js';
+```
+
 ## Training
 
 No GPUs OS requirements or nVidia libraries needed. I run this on my Macbook Pro with the included version of Python.
