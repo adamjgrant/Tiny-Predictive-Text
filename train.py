@@ -7,7 +7,8 @@ from slugify import slugify
 from create_dictionary import main as flatten_to_dictionary
 import signal
 import pickle
-from lib.process_words import main as process_words
+from lib.process_predictive_words import main as process_predictive_words
+from lib.process_context_words import main as process_context_words
 
 ###########
 # RECIPES #
@@ -147,7 +148,6 @@ def main():
                   break
               
               pbar.update(1)
-
               words = row.split()
 
               if interrupted:
@@ -162,23 +162,19 @@ def main():
 
               # Process words three at a time with shifting window
               for i in range(len(words) - 2):
-                  context_words = words[i:i+3]
-                  predictive_words = []
+                  context_words = process_context_words(words, i)
+                  predictive_words = process_predictive_words(words, i)
 
-                  # Determine predictive words, up to three or until one ends with a punctuation mark
-                  for j in range(i + 3, min(i + 6, len(words))):
-                    [predictive_word, should_break] = process_words(words)
-                    predictive_words.append(predictive_word)
-                    if (should_break):
-                      break
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
-                    
-                  finish_filing(tree_store, context_words, predictive_words, "3_words")
 
-  flatten_to_dictionary(tree_store, TARGET_DICTIONARY_COUNT) 
+                  print(predictive_words, context_words)
+                  print((" ").join(words))
+                  # finish_filing(tree_store, context_words, predictive_words)
 
-def finish_filing(tree_store, context_words, predictive_words, dictionary_subpath):
+  # flatten_to_dictionary(tree_store, TARGET_DICTIONARY_COUNT) 
+
+def finish_filing(tree_store, context_words, predictive_words):
     # Slugify the context words
     context_slug = slugify('_'.join(context_words), separator="_")
 
