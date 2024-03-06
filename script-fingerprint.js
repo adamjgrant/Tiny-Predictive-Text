@@ -102,6 +102,7 @@ const clear_suggestion = () => {
   suggested_text_on_deck = [];
   suggestion.classList.remove("two_word");
   suggestion.classList.remove("three_word");
+  set_state("no_suggestion")
 }
 
 const get_anchor = () => {
@@ -279,7 +280,7 @@ const filter_on_suggested_text_on_deck = (e) => {
   if (inside_suggestion_match.length) {
     last_word = inside_suggestion_match[0] + e.key;
   }  
-  console.log(last_word)
+  if (!suggested_text_on_deck.length) return
   // Find the index of the first item that starts with the last word
   const matchIndex = suggested_text_on_deck.findIndex(item => item.startsWith(last_word));
   console.log(matchIndex, suggested_text_on_deck)
