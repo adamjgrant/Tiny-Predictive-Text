@@ -3,15 +3,39 @@ A demonstration of predictive text without an LLM, using permy.link
 
 [Check it out](https://adamgrant.info/tiny-predictive-text)
 
-## Usage
-In script.js uncomment only the dictionary size you want to use. The larger the dictionary, the larger the file and will impact load times.
+## Quickstart
+
+Add Tiny predict to your HTML.
+
+```html
+  <script src="tiny-predict.min.js"></script>
+  <script>
+    import { Predict, PredictionState } from "tiny-predict.min.js";
+    // Rest of code
+  </script>
+</body>
+```
+
+To generate a suggestion, send in the string as an input parameter
 
 ```javascript
-import { dictionary } from './dictionary-10K.js';
-// import { dictionary } from './dictionary-25K.js';
-// import { dictionary } from './dictionary-100K.js';
-// import { dictionary } from './dictionary-250K.js';
+const prediction = new Predict({
+  input: "I would love to"
+});
+prediction.addEventListener("update", (suggestion, state) => {
+  // suggestion;        // Suggestion as string
+  // suggestion.next; // Get a new suggestion as string
+  // if (state == "INSIDE_SUGGESTION") {
+  //   suggestion.components // Array of matching versus not-yet-matched suggestion string
+  // }
+})
 ```
+
+The event listener will provide the first best suggestion. 
+
+The user may end up typing characters that better fit other predictions
+
+**Work in progress...**
 
 ## Training
 
