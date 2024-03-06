@@ -36,76 +36,72 @@ def signal_handler(sig, frame):
 # Register the signal handler
 signal.signal(signal.SIGINT, signal_handler)
 
-def save_trie_store(trie_store):
-    with open('training/trie_store.pkl', 'wb') as f:
-        pickle.dump(trie_store, f, protocol=pickle.HIGHEST_PROTOCOL)
-    print("trie_store saved due to interruption.")
+def save_tree_store(tree_store):
+    with open('training/tree_store.pkl', 'wb') as f:
+        pickle.dump(tree_store, f, protocol=pickle.HIGHEST_PROTOCOL)
+    print("tree_store saved due to interruption.")
 
-DEFAULT_TRIE_STORE ={'tries': {'3_words': {}, '2_words': {}, '1_word': {}}, 'scores': {}} 
+DEFAULT_TREE_STORE ={'tree': {}, 'scores': {}} 
 
-def load_trie_store():
+def load_tree_store():
     try:
-        with open('training/trie_store.pkl', 'rb') as f:
+        with open('training/tree_store.pkl', 'rb') as f:
             return pickle.load(f)
     except FileNotFoundError:
-        return DEFAULT_TRIE_STORE
+        return DEFAULT_TREE_STORE
 
-# Define a function to slugify context words into a filename-safe string
-def _slugify(text):
-    return slugify(text, separator="_")
-
-# Define a function to update the trie structure with predictive words
-def update_trie(trie, predictive_words):
+# Define a function to update the tree structure with predictive words
+def update_tree(tree, predictive_words):
     for word in predictive_words:
-        # Ensure each word has a sub-trie if it does not exist
-        if word not in trie:
-            trie[word] = {}
+        # Ensure each word has a sub-tree if it does not exist
+        if word not in tree:
+            tree[word] = {}
 
         # Ensure the '\ranked' key exists at the current level if not already present
-        if '\ranked' not in trie:
-            trie['\ranked'] = {}
+        if '\ranked' not in tree:
+            tree['\ranked'] = {}
 
         # Update the score in '\ranked' at the current level for the current word
-        trie['\ranked'][word] = trie['\ranked'].get(word, 0) + 1
+        tree['\ranked'][word] = tree['\ranked'].get(word, 0) + 1
         
-        # Move to the sub-trie of the current word for the next iteration
+        # Move to the sub-tree of the current word for the next iteration
         # This ensures the structure for subsequent words while keeping '\ranked' updated at the parent level
-        trie = trie[word]
+        tree = tree[word]
 
-# Define a function to load or initialize the trie from memory
-def load_trie(trie_store, path, context_slug):
-    # Access the trie data by first navigating to the path, then the context_slug
-    return trie_store['tries'].get(path, {}).get(context_slug, {})
+# Define a function to load or initialize the tree from memory
+def load_tree(tree_store, path, context_slug):
+    # Access the tree data by first navigating to the path, then the context_slug
+    return tree_store['tree'].get(path, {}).get(context_slug, {})
 
-def save_trie(trie_store, trie, path, context_slug):
-    # Check if the path exists in 'tries'; if not, create it
-    if path not in trie_store['tries']:
-        trie_store['tries'][path] = {}
+def save_tree(tree_store, tree, path, context_slug):
+    # Check if the path exists in 'tree'; if not, create it
+    if path not in tree_store['tree']:
+        tree_store['tree'][path] = {}
     
     # Now, path exists for sure; check for context_slug under this path
-    # This step might be redundant if you're always going to assign a new trie,
+    # This step might be redundant if you're always going to assign a new tree,
     # but it's crucial if you're updating or merging with existing data.
-    if context_slug not in trie_store['tries'][path]:
-        trie_store['tries'][path][context_slug] = {}
+    if context_slug not in tree_store['tree'][path]:
+        tree_store['tree'][path][context_slug] = {}
 
-    # Assign the trie to the specified path and context_slug
-    trie_store['tries'][path][context_slug] = trie
+    # Assign the tree to the specified path and context_slug
+    tree_store['tree'][path][context_slug] = tree
 
-def update_scores(trie_store, path, context_slug):
-    if path not in trie_store['scores']:
-        trie_store['scores'][path] = {}
-    if context_slug not in trie_store['scores'][path]:
-        trie_store['scores'][path][context_slug] = 0
-    trie_store['scores'][path][context_slug] += 1
+def update_scores(tree_store, path, context_slug):
+    if path not in tree_store['scores']:
+        tree_store['scores'][path] = {}
+    if context_slug not in tree_store['scores'][path]:
+        tree_store['scores'][path][context_slug] = 0
+    tree_store['scores'][path][context_slug] += 1
 
-def save_position(progress_file, current_position, trie_store):
+def save_position(progress_file, current_position, tree_store):
   # Every now and then save our progress.
   print(f"Saving the current position of %s" % current_position)
   # Save the current progress (file position)
   with open(progress_file, 'w') as f:
       f.write(str(current_position))
   print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
-  flatten_to_dictionary(trie_store, TARGET_DICTIONARY_COUNT)
+  flatten_to_dictionary(tree_store, TARGET_DICTIONARY_COUNT)
 
 # Define a main function to orchestrate the training process
 def main():
@@ -120,11 +116,11 @@ def main():
 
   # If retain flag is set, try to load existing training data
   if retain_data:
-      trie_store = load_trie_store()
+      tree_store = load_tree_store()
       print("Retained data loaded.")
   else:
       # If not retaining data, clear existing training directory and start fresh
-      trie_store = DEFAULT_TRIE_STORE
+      tree_store = DEFAULT_TREE_STORE
       if os.path.exists('training'):
           shutil.rmtree('training')
       print("Previous training data cleared.")
@@ -173,12 +169,12 @@ def main():
 
               if interrupted:
                 print("Saving data. Script will terminate when done.")
-                save_trie_store(trie_store)
+                save_tree_store(tree_store)
                 sys.exit(0)
 
               # Every now and then, prune unpopular entries.
               if (current_position - prune_position_marker > PRUNE_FREQUENCY):
-                save_position(progress_file, current_position, trie_store)
+                save_position(progress_file, current_position, tree_store)
                 prune_position_marker = current_position
 
               # Process words three at a time with shifting window
@@ -209,33 +205,33 @@ def main():
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
                     
-                  finish_filing(trie_store, context_words, predictive_words, "3_words")
+                  finish_filing(tree_store, context_words, predictive_words, "3_words")
 
                   ## Two word alternative
                   context_words_2 = words[i+1:i+3]
                   predictive_words_2 = predictive_words[:2]
-                  finish_filing(trie_store, context_words_2, predictive_words_2, "2_words")
+                  finish_filing(tree_store, context_words_2, predictive_words_2, "2_words")
 
                   ## Three word alternative
                   context_words_1 = words[i+2:i+3]
-                  finish_filing(trie_store, context_words_1, predictive_words_2, "1_word")
-  flatten_to_dictionary(trie_store, TARGET_DICTIONARY_COUNT) 
+                  finish_filing(tree_store, context_words_1, predictive_words_2, "1_word")
+  flatten_to_dictionary(tree_store, TARGET_DICTIONARY_COUNT) 
 
-def finish_filing(trie_store, context_words, predictive_words, dictionary_subpath):
+def finish_filing(tree_store, context_words, predictive_words, dictionary_subpath):
     # Slugify the context words
-    context_slug = _slugify('_'.join(context_words))
+    context_slug = slugify('_'.join(context_words), separator="_")
 
-    # Now you can safely proceed with the trie file path
-    trie = load_trie(trie_store, dictionary_subpath, context_slug)
+    # Now you can safely proceed with the tree file path
+    tree = load_tree(tree_store, dictionary_subpath, context_slug)
     
-    # Update the trie with the predictive words
-    update_trie(trie, predictive_words)
+    # Update the tree with the predictive words
+    update_tree(tree, predictive_words)
     
-    # Save the updated trie back to the .pkl file
-    save_trie(trie_store, trie, dictionary_subpath, context_slug)
+    # Save the updated tree back to the .pkl file
+    save_tree(tree_store, tree, dictionary_subpath, context_slug)
     
     # Update the counts in scores_3_words.pkl for the context words slug
-    update_scores(trie_store, dictionary_subpath, context_slug) 
+    update_scores(tree_store, dictionary_subpath, context_slug) 
 
 # Check if the script is being run directly and call the main function
 if __name__ == "__main__":
