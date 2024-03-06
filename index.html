@@ -2,17 +2,19 @@
 <link rel="stylesheet" href="style.css">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
 <h2>Tiny Predictive Text
-<br><small>Just browser JavaScript. No LLM. 5.4MB Dictionary. <a href="https://www.adamgrant.info/tiny-predictive-text">Learn more</a></small></h2>
+<br><small>Experiment using sentence fingerprinting</small></h2>
 <p>Press <strong>Tab</strong> to autocomplete with suggestion.<br>
    Press <strong>Shift</strong> to change the suggestion</p>
 <div id="suggestion">...</div>
  
 <textarea id="entry" placeholder="Start typing"></textarea>
+<p>
+  <br>Context string: <code><span id="cs-layer1">...</span> --> <span id="cs-layer2">...</span> --> <span id="cs-layer3">...</span> --> <span id="cs-layer4">...</span></code>
+</p>
 
-<p><div class="color_box" style="background-color: cornflowerblue"></div> Blue suggestions are based on the last word you typed (good).<br>
-   <div class="color_box" style="background-color: teal"></div> Teal = last two words (better)<br>
-   <div class="color_box" style="background-color: lightgreen"></div> Green = last three words (ideal)</p>
-<p>Made with <a href="https://permy.link">Permy</a></p>
-<script type="module" src="permute.js"></script>
-<script type="module" src="dictionary-10K.js"></script>
-<script type="module" src="script.js"></script>
+<p><div class="color_box" style="background-color: rgb(187, 246, 187)"></div> Light green = Good.<br>
+   <div class="color_box" style="background-color: #00cc00"></div> Green = Better<br>
+   <div class="color_box" style="background-color: darkgreen"></div> Dark green = Best<br>
+   <div class="color_box" style="background-color: #EEEEEE;"></div> White = Matching within prediction<br>
+   <div class="color_box" style="background-color: cornflowerblue;"></div> Blue = Idle</p>
+<script type="module" src="tiny-predict.js"></script>
