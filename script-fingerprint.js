@@ -1,5 +1,5 @@
-import { dictionary_anchors } from './dictionary-anchors-10K.js';
-import { dictionary_properties } from './dictionary-properties-10K.js';
+import { dictionary_anchors } from './dictionary-anchors-25K.js';
+import { dictionary_properties } from './dictionary-properties-25K.js';
 
 const MED_SCORE_THRESHOLD = 6;
 const HIGH_SCORE_THRESHOLD = 4;
@@ -282,12 +282,15 @@ const filter_on_suggested_text_on_deck = () => {
     const matchedItem = suggested_text_on_deck.splice(matchIndex, 1)[0]; // Remove the item from its current position
     suggested_text_on_deck.unshift(matchedItem); // Insert the item at the start of the array
   }
+  else {
+    return set_state("no_suggestion");
+  }
   suggestion.innerHTML = suggested_text_on_deck[0];
 }
 
 entry.addEventListener("keyup", (e) => {
   if (e.key === " ") {
-    if (current_state === "inside_suggestion") {
+    if (false && current_state === "inside_suggestion") {
       set_state("no_suggestion");
     }
   }
