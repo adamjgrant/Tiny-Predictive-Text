@@ -4,6 +4,19 @@ import { dictionary_properties } from './dictionary-properties-10K.js';
 const MED_SCORE_THRESHOLD = 6;
 const HIGH_SCORE_THRESHOLD = 4;
 
+const state_machine = {
+  no_suggestion: ["has_suggestion"],
+  has_suggestion: ["inside_suggestion", "no_suggestion"],
+  inside_suggestion: ["has_suggestion", "no_suggestion"]
+}
+let current_state = "no_suggestion";
+const set_state = (to) => {
+  const available_states = state_machine[current_state]
+  if (!available_states.includes(to) && current_state !== to) throw Error(`Not a valid state in ${current_state}: ${to}`);
+  current_state = to;
+  console.log("State is now", current_state);
+}
+
 let suggested_text_on_deck = [];
 const [entry, suggestion, uwr_el, vcr_el, wld_el, score_el, anchor_el] = [
   document.getElementById("entry"),
@@ -191,7 +204,15 @@ const use_suggestion = (event=undefined) => {
   const space = entry.value.split("").reverse()[0] === " " ? "" : " ";
   const suggestion = suggested_text_on_deck.shift();
   if (!suggestion) return;
-  entry.value = entry.value + space + suggestion + " ";
+  if (current_state === "inside_suggestion") {
+    let contents = entry.value.split(" ")
+    contents.pop()
+    contents.push(suggestion)
+    entry.value = contents.join(" ") + " ";
+  }
+  else {
+    entry.value = entry.value + space + suggestion + " ";
+  }
   clear_suggestion();
 }
 
@@ -243,15 +264,42 @@ const check_for_suggestion = () => {
   let suggested_words = find_a_suggestion(entry.value.trim().split(" ").slice(-10));
 
   if (!suggested_words.length) {
+    set_state("no_suggestion");
     return clear_suggestion();
   }
+  set_state("has_suggestion");
   suggested_text_on_deck = suggested_words;
   suggestion.innerHTML = suggested_words[0];
 }
 
+const filter_on_suggested_text_on_deck = () => {
+  let last_word = entry.value.trim().split(" ").pop()
+  // Find the index of the first item that starts with the last word
+  const matchIndex = suggested_text_on_deck.findIndex(item => item.startsWith(last_word));
+
+  if (matchIndex > -1) {
+    // If a match is found, move the matching item to the beginning of the array
+    const matchedItem = suggested_text_on_deck.splice(matchIndex, 1)[0]; // Remove the item from its current position
+    suggested_text_on_deck.unshift(matchedItem); // Insert the item at the start of the array
+  }
+  suggestion.innerHTML = suggested_text_on_deck[0];
+}
+
 entry.addEventListener("keyup", (e) => {
+  if (e.key === " ") {
+    if (current_state === "inside_suggestion") {
+      set_state("no_suggestion");
+    }
+  }
+
   if (e.key != "Shift") {
     if (!five_words_typed()) return clear_suggestion();
-    check_for_suggestion();
+    if (current_state === "has_suggestion" || current_state === "inside_suggestion") {
+      set_state("inside_suggestion");
+      return filter_on_suggested_text_on_deck();
+    }
+    else {
+      return check_for_suggestion();
+    }
   }
 });
