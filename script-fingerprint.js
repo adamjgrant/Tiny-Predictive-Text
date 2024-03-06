@@ -16,6 +16,7 @@ const set_state = (to) => {
   current_state = to;
   console.log("State is now", current_state);
 }
+let inside_suggestion_match = [];
 
 let suggested_text_on_deck = [];
 const [entry, suggestion, uwr_el, vcr_el, wld_el, score_el, anchor_el] = [
@@ -205,10 +206,11 @@ const use_suggestion = (event=undefined) => {
   const suggestion = suggested_text_on_deck.shift();
   if (!suggestion) return;
   if (current_state === "inside_suggestion") {
-    let contents = entry.value.split(" ")
-    contents.pop()
-    contents.push(suggestion)
-    entry.value = contents.join(" ") + " ";
+    const toReplaceInReverse = inside_suggestion_match[0].split("").reverse().join("");
+    const reversedEntry = entry.value.split("").reverse().join("");
+    const newEntryReversed = reversedEntry.replace(toReplaceInReverse, suggestion.split("").reverse().join(""))
+    const entryForwards = newEntryReversed.split("").reverse().join("");
+    entry.value = entryForwards
   }
   else {
     entry.value = entry.value + space + suggestion + " ";
@@ -272,17 +274,25 @@ const check_for_suggestion = () => {
   suggestion.innerHTML = suggested_words[0];
 }
 
-const filter_on_suggested_text_on_deck = () => {
+const filter_on_suggested_text_on_deck = (e) => {
   let last_word = entry.value.trim().split(" ").pop()
+  if (inside_suggestion_match.length) {
+    last_word = inside_suggestion_match[0] + e.key;
+  }  
+  console.log(last_word)
   // Find the index of the first item that starts with the last word
   const matchIndex = suggested_text_on_deck.findIndex(item => item.startsWith(last_word));
+  console.log(matchIndex, suggested_text_on_deck)
 
   if (matchIndex > -1) {
     // If a match is found, move the matching item to the beginning of the array
     const matchedItem = suggested_text_on_deck.splice(matchIndex, 1)[0]; // Remove the item from its current position
     suggested_text_on_deck.unshift(matchedItem); // Insert the item at the start of the array
+    inside_suggestion_match = [last_word, entry.value.length];
+    set_state("inside_suggestion");
   }
   else {
+    inside_suggestion_match = []
     return set_state("no_suggestion");
   }
   suggestion.innerHTML = suggested_text_on_deck[0];
@@ -295,11 +305,10 @@ entry.addEventListener("keyup", (e) => {
     }
   }
 
-  if (e.key != "Shift") {
+  if (e.key != "Shift" && e.key != "Tab") {
     if (!five_words_typed()) return clear_suggestion();
     if (current_state === "has_suggestion" || current_state === "inside_suggestion") {
-      set_state("inside_suggestion");
-      return filter_on_suggested_text_on_deck();
+      return filter_on_suggested_text_on_deck(e);
     }
     else {
       return check_for_suggestion();
