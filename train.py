@@ -165,14 +165,15 @@ def main():
                   context_words = process_context_words(words, i)
                   predictive_words = process_predictive_words(words, i)
 
+                  print(predictive_words, context_words)
+                  print((" ").join(words))
+
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
 
-                  print(predictive_words, context_words)
-                  print((" ").join(words))
                   # finish_filing(tree_store, context_words, predictive_words)
 
-  # flatten_to_dictionary(tree_store, TARGET_DICTIONARY_COUNT) 
+  flatten_to_dictionary(tree_store, TARGET_DICTIONARY_COUNT) 
 
 def finish_filing(tree_store, context_words, predictive_words):
     # Slugify the context words

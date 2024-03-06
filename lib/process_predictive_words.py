@@ -4,7 +4,7 @@ def main(words, index):
   predictive_words = []
   # Determine predictive words, up to three or until one ends with a punctuation mark
   for j in range(index + 6, min(index + 9, len(words))):
-    word = words[index]
+    word = words[j]
     # Define a set of punctuation that is allowed within a word
     internal_punctuation = {"'", "-"}
     additional_punctuation = {"“", "”", "–", "—"}
@@ -21,6 +21,7 @@ def main(words, index):
     else:
       predictive_words.append(cleaned_word)
       continue
+  return predictive_words
 
                     
 

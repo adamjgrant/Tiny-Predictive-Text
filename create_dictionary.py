@@ -63,6 +63,7 @@ def convert_to_array(obj):
     return result
 
 def main(trie_store, TARGET_DICTIONARY_COUNT):
+    return
     # Path configuration is no longer needed for file paths but retained for logical separation
     # in trie_store
     output_file = 'dictionary.js'
