@@ -4,10 +4,10 @@ import sys
 import shutil
 from tqdm import tqdm
 from slugify import slugify
-import string
 from create_dictionary import main as flatten_to_dictionary
 import signal
 import pickle
+from lib.process_words import main as process_words
 
 ###########
 # RECIPES #
@@ -52,21 +52,7 @@ def load_tree_store():
 
 # Define a function to update the tree structure with predictive words
 def update_tree(tree, predictive_words):
-    for word in predictive_words:
-        # Ensure each word has a sub-tree if it does not exist
-        if word not in tree:
-            tree[word] = {}
-
-        # Ensure the '\ranked' key exists at the current level if not already present
-        if '\ranked' not in tree:
-            tree['\ranked'] = {}
-
-        # Update the score in '\ranked' at the current level for the current word
-        tree['\ranked'][word] = tree['\ranked'].get(word, 0) + 1
-        
-        # Move to the sub-tree of the current word for the next iteration
-        # This ensures the structure for subsequent words while keeping '\ranked' updated at the parent level
-        tree = tree[word]
+  return # TODO
 
 # Define a function to load or initialize the tree from memory
 def load_tree(tree_store, path, context_slug):
@@ -132,9 +118,6 @@ def main():
   # Ensure the 'training' directory and its subdirectories/files exist
   dictionaries_path = 'training/dictionaries'
   os.makedirs(dictionaries_path, exist_ok=True)
-  os.makedirs(os.path.join(dictionaries_path, "3_words"), exist_ok=True)
-  os.makedirs(os.path.join(dictionaries_path, "2_words"), exist_ok=True)
-  os.makedirs(os.path.join(dictionaries_path, "1_word"), exist_ok=True)
 
   # Get the total size of the file to calculate the number of iterations needed
   total_size = os.path.getsize(training_data_file)
@@ -184,37 +167,15 @@ def main():
 
                   # Determine predictive words, up to three or until one ends with a punctuation mark
                   for j in range(i + 3, min(i + 6, len(words))):
-                      word = words[j]
-                      # Define a set of punctuation that is allowed within a word
-                      internal_punctuation = {"'", "-"}
-                      additional_punctuation = {"“", "”", "–", "—"}
-                      # Create a set of punctuation that signals the end of a word, excluding the internal punctuation
-                      ending_punctuation = (set(string.punctuation) | additional_punctuation) - internal_punctuation
-                      
-                      # Check for and remove ending punctuation from the word
-                      cleaned_word = ''.join(char for char in word if char not in ending_punctuation)
-                      
-                      # If after cleaning the word it ends with any ending punctuation, or if the original word contained ending punctuation
-                      if cleaned_word != word or any(char in ending_punctuation for char in word):
-                          predictive_words.append(cleaned_word)
-                          break
-                      else:
-                          # For regular words or words with internal punctuation, add the cleaned word
-                          predictive_words.append(cleaned_word)
-
+                    [predictive_word, should_break] = process_words(words)
+                    predictive_words.append(predictive_word)
+                    if (should_break):
+                      break
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
                     
                   finish_filing(tree_store, context_words, predictive_words, "3_words")
 
-                  ## Two word alternative
-                  context_words_2 = words[i+1:i+3]
-                  predictive_words_2 = predictive_words[:2]
-                  finish_filing(tree_store, context_words_2, predictive_words_2, "2_words")
-
-                  ## Three word alternative
-                  context_words_1 = words[i+2:i+3]
-                  finish_filing(tree_store, context_words_1, predictive_words_2, "1_word")
   flatten_to_dictionary(tree_store, TARGET_DICTIONARY_COUNT) 
 
 def finish_filing(tree_store, context_words, predictive_words, dictionary_subpath):
