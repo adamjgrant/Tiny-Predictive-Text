@@ -1,5 +1,6 @@
-import { dictionary_anchors } from './dictionary-anchors-25K.js';
-import { dictionary_properties } from './dictionary-properties-25K.js';
+import { dictionary_anchors } from './dictionary-anchors.js';
+import { dictionary_properties } from './dictionary-properties.js';
+import { token_mapping as token_to_word } from './token-mapping.js';
 
 const MED_SCORE_THRESHOLD = 6;
 const HIGH_SCORE_THRESHOLD = 4;
@@ -28,6 +29,11 @@ const [entry, suggestion, uwr_el, vcr_el, wld_el, score_el, anchor_el] = [
   document.getElementById("score"),
   document.getElementById("anchor")
 ];
+
+const word_to_token = Object.entries(token_to_word).reduce((acc, [token, word]) => {
+  acc[word] = token;
+  return acc;
+}, {});
 
 const get_word = (word=entry.value) => {
   let last_three_words = word.trim().split(" ");
@@ -183,15 +189,16 @@ const calculateSimilarity = (inputProps, dictProps) => {
 const get_suggestion = (string) => {
   const properties = compute_properties(string);
   const anchor = get_anchor();
+  const anchor_as_token = word_to_token[anchor];
 
-  const contexts = dictionary_anchors[anchor];
+  const contexts = dictionary_anchors[anchor_as_token];
   if (!contexts) return [];
 
   let scoredEntries = contexts.reduce((acc, context) => {
     const dictProps = dictionary_properties[context];
     if (dictProps) {
       const score = calculateSimilarity(properties, dictProps);
-      acc.push({ completion: dictProps.completion, score });
+      acc.push({ completion: dictProps.completion.split(" ").map(c => token_to_word[c]).join(" "), score });
     }
     return acc;
   }, []);

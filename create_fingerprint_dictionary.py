@@ -4,39 +4,59 @@ import json
 def main(trie_store, TARGET_DICTIONARY_COUNT):
     output_file_anchors = 'dictionary-anchors.js'
     output_file_properties = 'dictionary-properties.js'
+    output_file_token_mapping = 'token-mapping.js'
 
     # Initialize containers for the new structures
     anchors = {}
     properties = {}
+    word_to_token = {}
+    token_to_word = {}
+    token_counter = 1  # Start token counter
 
     prune_unpopular(trie_store, TARGET_DICTIONARY_COUNT)
 
-    # Iterate through each item in trie_store["fingerprints"]
+    # Process properties and tokenize 'completion' phrases
     for context_group, info in trie_store["fingerprints"].items():
+        completion = info.get("completion", "")
+        tokenized_completion = []
+        
+        # Tokenize each word in the completion phrase
+        for word in completion.split():
+            if word not in word_to_token:
+                word_to_token[word] = token_counter
+                token_to_word[token_counter] = word
+                token_counter += 1
+            tokenized_completion.append(str(word_to_token[word]))
+        
+        # Reconstruct the completion phrase using tokens
+        tokenized_completion_str = " ".join(tokenized_completion)
+
         # Process anchors
         for anchor_word in info.get("anc", {}).keys():
-            # If the anchor_word is not in anchors, initialize it with an empty list
-            if anchor_word not in anchors:
-                anchors[anchor_word] = []
-            # Append the context_group to the anchor_word's list
-            anchors[anchor_word].append(context_group)
-
-        # Process properties excluding 'anc'
+            if anchor_word not in word_to_token:
+                word_to_token[anchor_word] = token_counter
+                token_to_word[token_counter] = anchor_word
+                token_counter += 1
+            token = word_to_token[anchor_word]
+            if token not in anchors:
+                anchors[token] = []
+            anchors[token].append(context_group)
+        
+        # Store tokenized completion in properties excluding 'anc'
+        info["completion"] = tokenized_completion_str
         properties[context_group] = {k: v for k, v in info.items() if k != "anc"}
 
-    print(f"Dictionary width is {len(properties.keys())}")
+    # Export the new structures to JavaScript files
+    write_to_js(output_file_anchors, anchors, "dictionary_anchors")
+    write_to_js(output_file_properties, properties, "dictionary_properties")
+    write_to_js(output_file_token_mapping, token_to_word, "token_mapping")
 
-    # Write the anchors object to dictionary-anchors.js in the desired format
-    with open(output_file_anchors, 'w') as js_file:
-        minimized_json = json.dumps(anchors, separators=(',', ':'))
-        js_content = f"export const dictionary_anchors = {minimized_json};"
+def write_to_js(file_path, data, variable_name):
+    with open(file_path, 'w') as js_file:
+        minimized_json = json.dumps(data, separators=(',', ':'))
+        js_content = f"export const {variable_name} = {minimized_json};"
         js_file.write(js_content)
 
-    # Write the properties object to dictionary-properties.js in the desired format
-    with open(output_file_properties, 'w') as js_file:
-        minimized_json = json.dumps(properties, separators=(',', ':'))
-        js_content = f"export const dictionary_properties = {minimized_json};"
-        js_file.write(js_content)
 
 def prune_unpopular(trie_store, target_dictionary_count):
     # Access the nested scores directly
