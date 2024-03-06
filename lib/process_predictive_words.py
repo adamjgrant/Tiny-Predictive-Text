@@ -3,7 +3,7 @@ import string
 def main(words, index):
   predictive_words = []
   # Determine predictive words, up to three or until one ends with a punctuation mark
-  for j in range(index + 6, min(index + 9, len(words))):
+  for j in range(index + 1, min(index + 4, len(words))):
     word = words[j]
     # Define a set of punctuation that is allowed within a word
     internal_punctuation = {"'", "-"}
