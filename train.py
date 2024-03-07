@@ -9,6 +9,7 @@ import signal
 import pickle
 from lib.process_predictive_words import main as process_predictive_words
 from lib.process_context_words import main as process_context_words
+from lib.finish_filing import main as finish_filing
 
 ###########
 # RECIPES #
@@ -42,7 +43,7 @@ def save_tree_store(tree_store):
         pickle.dump(tree_store, f, protocol=pickle.HIGHEST_PROTOCOL)
     print("tree_store saved due to interruption.")
 
-DEFAULT_TREE_STORE ={'tree': {}, 'scores': {}} 
+DEFAULT_TREE_STORE ={} 
 
 def load_tree_store():
     try:
@@ -50,29 +51,6 @@ def load_tree_store():
             return pickle.load(f)
     except FileNotFoundError:
         return DEFAULT_TREE_STORE
-
-# Define a function to update the tree structure with predictive words
-def update_tree(tree, predictive_words):
-  return # TODO
-
-# Define a function to load or initialize the tree from memory
-def load_tree(tree_store, path, context_slug):
-    # Access the tree data by first navigating to the path, then the context_slug
-    return tree_store['tree'].get(path, {}).get(context_slug, {})
-
-def save_tree(tree_store, tree, path, context_slug):
-    # Check if the path exists in 'tree'; if not, create it
-    if path not in tree_store['tree']:
-        tree_store['tree'][path] = {}
-    
-    # Now, path exists for sure; check for context_slug under this path
-    # This step might be redundant if you're always going to assign a new tree,
-    # but it's crucial if you're updating or merging with existing data.
-    if context_slug not in tree_store['tree'][path]:
-        tree_store['tree'][path][context_slug] = {}
-
-    # Assign the tree to the specified path and context_slug
-    tree_store['tree'][path][context_slug] = tree
 
 def update_scores(tree_store, path, context_slug):
     if path not in tree_store['scores']:
@@ -168,25 +146,9 @@ def main():
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
 
-                  finish_filing(tree_store, context_words, predictive_words)
+                  tree_store = finish_filing(tree_store, context_words, predictive_words)
 
   flatten_to_dictionary(tree_store, TARGET_DICTIONARY_COUNT) 
-
-def finish_filing(tree_store, context_words, predictive_words):
-    # Slugify the context words
-    context_slug = slugify('_'.join(context_words), separator="_")
-
-    # Now you can safely proceed with the tree file path
-    tree = load_tree(tree_store, dictionary_subpath, context_slug)
-    
-    # Update the tree with the predictive words
-    update_tree(tree, predictive_words)
-    
-    # Save the updated tree back to the .pkl file
-    save_tree(tree_store, tree, dictionary_subpath, context_slug)
-    
-    # Update the counts in scores_3_words.pkl for the context words slug
-    update_scores(tree_store, dictionary_subpath, context_slug) 
 
 # Check if the script is being run directly and call the main function
 if __name__ == "__main__":
