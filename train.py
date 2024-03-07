@@ -126,16 +126,9 @@ def main():
                   save_tree_store(tree_store)
                   sys.exit(0)
 
-              chunks_processed_since_prune += 1  # Increment chunk processed counter
-
-              # Every now and then, prune unpopular entries based on chunks processed
-              if chunks_processed_since_prune >= PRUNE_FREQUENCY:
-                  save_position(progress_file, file.tell(), tree_store)
-                  # Reset chunk processed counter after pruning
-                  chunks_processed_since_prune = 0
-
               # - is a reserved character for storing scores.
               words = [word.replace("-", "\-") for word in words]
+              words = [word.replace("_", "\_") for word in words]
               
               # Process words three at a time with shifting window
               for i in range(len(words) - 2):
@@ -149,6 +142,15 @@ def main():
                   # tokenizing words that we don't end up needing. Create dict will make a fresh
                   # token dict on each run.
                   tree_store = finish_filing(tree_store, context_words, predictive_words)
+
+              chunks_processed_since_prune += 1  # Increment chunk processed counter
+
+              # Every now and then, prune unpopular entries based on chunks processed
+              if chunks_processed_since_prune >= PRUNE_FREQUENCY:
+                  save_position(progress_file, file.tell(), tree_store)
+                  # Reset chunk processed counter after pruning
+                  chunks_processed_since_prune = 0
+
 
   create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
 
