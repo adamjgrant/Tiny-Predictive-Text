@@ -4,13 +4,12 @@ import sys
 import shutil
 from tqdm import tqdm
 from slugify import slugify
-from create_dictionary import main as flatten_to_dictionary
 import signal
 import pickle
 from lib.process_predictive_words import main as process_predictive_words
 from lib.process_context_words import main as process_context_words
 from lib.finish_filing import main as finish_filing
-from lib.create_dictionary import main as create_dictionary
+from lib.create_dictionary import create_dictionary_and_tokenize
 
 ###########
 # RECIPES #
@@ -23,7 +22,7 @@ from lib.create_dictionary import main as create_dictionary
 
 PRUNE_FREQUENCY = 1 * 1000 * 1000 # Every this many document positions
 CHUNK_SIZE = 1024 # 1KB per chunk
-TARGET_DICTIONARY_COUNT = 250 * 1000
+TARGET_DICTIONARY_COUNT = 10 * 1000
 
 # Define a flag to indicate when an interrupt has been caught
 interrupted = False
@@ -53,13 +52,6 @@ def load_tree_store():
     except FileNotFoundError:
         return DEFAULT_TREE_STORE
 
-def update_scores(tree_store, path, context_slug):
-    if path not in tree_store['scores']:
-        tree_store['scores'][path] = {}
-    if context_slug not in tree_store['scores'][path]:
-        tree_store['scores'][path][context_slug] = 0
-    tree_store['scores'][path][context_slug] += 1
-
 def save_position(progress_file, current_position, tree_store):
   # Every now and then save our progress.
   print(f"Saving the current position of %s" % current_position)
@@ -67,12 +59,11 @@ def save_position(progress_file, current_position, tree_store):
   with open(progress_file, 'w') as f:
       f.write(str(current_position))
   print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
-  flatten_to_dictionary(tree_store, TARGET_DICTIONARY_COUNT)
+  create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
 
 # Define a main function to orchestrate the training process
 def main():
   global prune_position_marker
-  token_dict = {}
 
   # Parse command line arguments to get the name of the training data file
   if len(sys.argv) < 2:
@@ -140,6 +131,9 @@ def main():
                 save_position(progress_file, current_position, tree_store)
                 prune_position_marker = current_position
 
+              # - is a reserved character for storing scores.
+              words = [word.replace("-", "\-") for word in words]
+              
               # Process words three at a time with shifting window
               for i in range(len(words) - 2):
                   context_words = process_context_words(words, i)
@@ -148,12 +142,12 @@ def main():
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
 
-                  [tree_store, token_dict] = finish_filing(tree_store, token_dict, context_words, predictive_words)
+                  # It's better to tokenize on the create dictionary step so we're not
+                  # tokenizing words that we don't end up needing. Create dict will make a fresh
+                  # token dict on each run.
+                  tree_store = finish_filing(tree_store, context_words, predictive_words)
 
-              print(tree_store)
-              print(token_dict)
-
-  flatten_to_dictionary(tree_store, TARGET_DICTIONARY_COUNT) 
+  create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
 
 # Check if the script is being run directly and call the main function
 if __name__ == "__main__":
