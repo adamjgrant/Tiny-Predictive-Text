@@ -1,6 +1,6 @@
 import json
 
-SUBBRANCH_PRUNE_SIZE = 5
+SUBBRANCH_PRUNE_SIZE = 4
 
 def create_token_dict(tree):
     token_dict = {}
@@ -26,8 +26,8 @@ def create_token_dict(tree):
     assign_tokens(tree)
     return token_dict
 
-def create_dictionary(tree_store, target_dict_size):
-    def sort_and_prune(current_dict, target_size):
+def create_dictionary(tree_store, target_dict_size, subbranch_prune_size=4):
+    def sort_and_prune(current_dict, target_size, is_top_level=True):
         target_size = int(target_size)
         # Create a new dictionary to hold pruned items
         pruned_items = {}
@@ -52,12 +52,14 @@ def create_dictionary(tree_store, target_dict_size):
                 for subkey, subvalue in item.items():
                     if isinstance(subvalue, dict):
                         # Sort and prune recursively
-                        pruned_items[key][subkey] = sort_and_prune(subvalue, max(SUBBRANCH_PRUNE_SIZE - 1, 1))
+                        # Apply subbranch prune size for non-top-level items
+                        next_target_size = subbranch_prune_size if not is_top_level else target_size
+                        pruned_items[key][subkey] = sort_and_prune(subvalue, next_target_size, False)
         
         return pruned_items
 
-    # Start the recursive sorting and pruning from the root
-    pruned_tree = sort_and_prune(tree_store, target_dict_size)
+    # Start the recursive sorting and pruning from the root with the top level flag set to True
+    pruned_tree = sort_and_prune(tree_store, target_dict_size, True)
 
     return pruned_tree
   

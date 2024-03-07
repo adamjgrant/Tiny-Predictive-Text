@@ -20,7 +20,7 @@ from lib.create_dictionary import create_dictionary_and_tokenize
 # 11.9MB: Target dictionary count 25,000,    Prune 10,000,000
 # 5.4MB:  Target dictionary count 10,000,    Prune 10,000,000
 
-PRUNE_FREQUENCY = 1 * 1000 * 1000 # Every this many document positions
+PRUNE_FREQUENCY = 1000 # Every this many document positions
 CHUNK_SIZE = 1024 # 1KB per chunk
 TARGET_DICTIONARY_COUNT = 10 * 1000
 
@@ -109,11 +109,11 @@ def main():
   with open(training_data_file, 'r') as file:
       # Skip to the last processed position, if any
       file.seek(last_processed_position)
-      prune_position_marker = file.tell()
+      # Initialize the chunk processed counter for pruning logic
+      chunks_processed_since_prune = 0
 
       with tqdm(initial=last_processed_position // CHUNK_SIZE, total=total_iterations, unit='chunk', desc="Processing file") as pbar:
           while True:
-              current_position = file.tell()
               row = file.read(CHUNK_SIZE)
               if not row:
                   break
@@ -122,14 +122,17 @@ def main():
               words = row.split()
 
               if interrupted:
-                print("Saving data. Script will terminate when done.")
-                save_tree_store(tree_store)
-                sys.exit(0)
+                  print("Saving data. Script will terminate when done.")
+                  save_tree_store(tree_store)
+                  sys.exit(0)
 
-              # Every now and then, prune unpopular entries.
-              if (current_position - prune_position_marker > PRUNE_FREQUENCY):
-                save_position(progress_file, current_position, tree_store)
-                prune_position_marker = current_position
+              chunks_processed_since_prune += 1  # Increment chunk processed counter
+
+              # Every now and then, prune unpopular entries based on chunks processed
+              if chunks_processed_since_prune >= PRUNE_FREQUENCY:
+                  save_position(progress_file, file.tell(), tree_store)
+                  # Reset chunk processed counter after pruning
+                  chunks_processed_since_prune = 0
 
               # - is a reserved character for storing scores.
               words = [word.replace("-", "\-") for word in words]
