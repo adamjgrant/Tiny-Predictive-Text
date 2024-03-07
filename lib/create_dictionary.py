@@ -25,44 +25,36 @@ def create_token_dict(tree):
         
     assign_tokens(tree)
     return token_dict
-
-def create_dictionary(tree_store, target_dict_size, subbranch_prune_size=4):
-    def sort_and_prune(current_dict, target_size, is_top_level=True):
-        target_size = int(target_size)
-        # Create a new dictionary to hold pruned items
-        pruned_items = {}
-
-        # First, sort the current level items by their score in descending order, excluding '-' key itself
-        sorted_items = sorted(
-            [(k, v) for k, v in current_dict.items() if isinstance(v, dict) and '-' in v],
-            key=lambda item: item[1]['-'],
-            reverse=True
-        )
-
-        # Prune to keep only the top target_size items at the current level
-        pruned_keys = [k for k, _ in sorted_items[:target_size]]
-        
-        # Now, go through the pruned keys to recursively sort and prune children or predictions
-        for key in pruned_keys:
-            item = current_dict[key]
-            pruned_items[key] = item  # Keep the entire item, including the '-'
-
-            # If this item has any nested structure that needs sorting and pruning, do it recursively
-            if isinstance(item, dict):
-                for subkey, subvalue in item.items():
-                    if isinstance(subvalue, dict):
-                        # Sort and prune recursively
-                        # Apply subbranch prune size for non-top-level items
-                        next_target_size = subbranch_prune_size if not is_top_level else target_size
-                        pruned_items[key][subkey] = sort_and_prune(subvalue, next_target_size, False)
-        
-        return pruned_items
-
-    # Start the recursive sorting and pruning from the root with the top level flag set to True
-    pruned_tree = sort_and_prune(tree_store, target_dict_size, True)
-
-    return pruned_tree
   
+def create_dictionary(tree_store, target_dict_size):
+    def sort_keys_by_score(tree):
+        # Sorts the tree's top-level keys based on their child score ("-") value, highest first
+        return dict(sorted(tree.items(), key=lambda item: item[1]['-'] if isinstance(item[1], dict) and '-' in item[1] else 0, reverse=True))
+
+    def prune_top_level_entries_by_limit(tree, limit):
+        # Keeps only the first `limit` number of top-level entries
+        return dict(list(tree.items())[:limit])
+
+    top_sorted_tree = sort_keys_by_score(tree_store)
+    top_pruned_tree = prune_top_level_entries_by_limit(top_sorted_tree, target_dict_size)
+
+    def prune_and_sort_lower_branches(subtree, limit):
+        if isinstance(subtree, dict):
+            top_sorted_subtree = sort_keys_by_score(subtree)
+            pruned_subtree = prune_top_level_entries_by_limit(top_sorted_subtree, limit)
+            for k, v in pruned_subtree.items():
+                # Recursively apply pruning and sorting to lower branches if v is a dict
+                pruned_subtree[k] = prune_and_sort_lower_branches(v, SUBBRANCH_PRUNE_SIZE)
+            return pruned_subtree
+        else:
+            return subtree
+
+    for k in list(top_pruned_tree.keys()):
+        subtree = top_pruned_tree[k]
+        top_pruned_tree[k] = prune_and_sort_lower_branches(subtree, SUBBRANCH_PRUNE_SIZE)
+
+    return top_pruned_tree
+
 def save_to_json_files(pruned_tree, token_dict):
     # Save the tokenized tree to dictionary.json
     with open('dictionary.json', 'w') as dict_file:
