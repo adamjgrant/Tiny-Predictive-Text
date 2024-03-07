@@ -10,6 +10,7 @@ import pickle
 from lib.process_predictive_words import main as process_predictive_words
 from lib.process_context_words import main as process_context_words
 from lib.finish_filing import main as finish_filing
+from lib.create_dictionary import main as create_dictionary
 
 ###########
 # RECIPES #
@@ -71,6 +72,7 @@ def save_position(progress_file, current_position, tree_store):
 # Define a main function to orchestrate the training process
 def main():
   global prune_position_marker
+  token_dict = {}
 
   # Parse command line arguments to get the name of the training data file
   if len(sys.argv) < 2:
@@ -146,7 +148,10 @@ def main():
                   if not predictive_words:  # Skip if there are no predictive words
                       continue
 
-                  tree_store = finish_filing(tree_store, context_words, predictive_words)
+                  [tree_store, token_dict] = finish_filing(tree_store, token_dict, context_words, predictive_words)
+
+              print(tree_store)
+              print(token_dict)
 
   flatten_to_dictionary(tree_store, TARGET_DICTIONARY_COUNT) 
 
