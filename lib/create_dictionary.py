@@ -1,4 +1,5 @@
 import json
+import msgpack
 import copy
 
 SUBBRANCH_PRUNE_SIZE = 4
@@ -111,14 +112,11 @@ def create_dictionary(tree_store, target_dict_size):
     return top_pruned_tree
 
 def save_to_json_files(pruned_tree, token_dict):
-    print("Saving JSON files")
-    # Save the tokenized tree to dictionary.json
-    with open('dictionary.json', 'w') as dict_file:
-        json.dump(pruned_tree, dict_file)
-    
-    # Save the token dictionary to tokens.json
-    with open('tokens.json', 'w') as token_file:
-        json.dump(token_dict, token_file)
+    with open('dictionary.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
+      msgpack.dump(pruned_tree, dict_file)
+
+    with open('tokens.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
+      msgpack.dump(token_dict, dict_file)
   
 def create_dictionary_and_tokenize(tree_store, target_dict_size):
     global token_dict
