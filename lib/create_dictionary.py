@@ -1,31 +1,46 @@
 import json
+import copy
 
 SUBBRANCH_PRUNE_SIZE = 4
 
-def create_token_dict(tree):
-    return tree
-    token_dict = {}
-    current_token = 0  # Start token numbering from 0 or 1 based on your preference
+def regsiter_string_with_token_dictionary(string, token_dict):
+  next_token = len(token_dict.keys())
 
-    def assign_tokens(node):
-        nonlocal current_token
-        if isinstance(node, dict):
-            for key in list(node.keys()):  # Use list(node.keys()) to avoid RuntimeError
-                value = node[key]
-                if key != "-" and not isinstance(value, int):
-                    # Assign a token if the word doesn't have one yet
-                    if key not in token_dict:
-                        token_dict[key] = current_token
-                        current_token += 1
-                    # Replace the key with its token in the node
-                    tokenized_key = token_dict[key]
-                    node[tokenized_key] = node.pop(key)
-                    assign_tokens(node[tokenized_key])  # Recursively assign tokens
-                else:
-                    assign_tokens(value)  # Recursively assign tokens for nested dictionaries or values
-        
-    assign_tokens(tree)
-    return token_dict
+  if string not in token_dict.values():
+    token_dict[next_token] = string
+
+  used_token = list(token_dict.keys())[list(token_dict.values()).index(string)]
+
+  return [used_token, token_dict]
+
+def create_token_dict(tree):
+    def tokenize_tree(node, token_dict):
+        if isinstance(node, dict) and len(node.items()):
+            keys = list(node.keys())
+            for key in keys:
+              # Skip special keys "_" and "-"
+              if key in ["-"]:
+                continue
+
+              if key == "_":
+                _keys = list(node["_"].keys())
+                for _key in _keys:
+                  _token, token_dict = regsiter_string_with_token_dictionary(_key, token_dict)
+                  node["_"][_token] = node["_"].pop(_key)
+                continue
+
+              # Register token
+              token, token_dict = regsiter_string_with_token_dictionary(key, token_dict)
+
+              # Swap out the keyname for the token.
+              node[token] = node.pop(key, None)
+
+              # Recursively process the value
+              node[token], token_dict = tokenize_tree(node[token], token_dict)
+
+        return node, token_dict
+
+    return tokenize_tree(tree, {})
   
 def create_dictionary(tree_store, target_dict_size):
     def sort_keys_by_score(tree):
@@ -40,9 +55,10 @@ def create_dictionary(tree_store, target_dict_size):
         return sorted_tree
 
     def prune_top_level_entries_by_limit(tree, limit):
-        # Prunes the tree to keep only the first `limit` number of top-level entries, excluding the "-" key
-        pruned_tree = {'-': tree['-']} if '-' in tree else {}  # Preserve "-" score
-        pruned_tree.update(dict(list(tree.items())[1:limit+1]))  # +1 to account for "-" key not being pruned
+        pruned_tree = tree
+        keys_to_delete = list(tree.keys())[limit:len(tree.keys())]
+        for key in keys_to_delete:
+          pruned_tree.pop(key)
         return pruned_tree
 
     top_sorted_tree = sort_keys_by_score(tree_store)
@@ -51,8 +67,8 @@ def create_dictionary(tree_store, target_dict_size):
     def prune_and_sort_lower_branches(subtree, limit):
         if isinstance(subtree, dict):
             # Special handling to preserve the "-" and "_" keys correctly
-            score = subtree.get('-', 0)  # Preserve the existing score, if any
-            predictions = subtree.get('_', {})  # Preserve predictions, if any
+            score = subtree.get('-', False)  # Preserve the existing score, if any
+            predictions = subtree.get('_', False)  # Preserve predictions, if any
             
             # Filter out the special keys for sorting and pruning operations
             filtered_subtree = {k: v for k, v in subtree.items() if k not in ['-', '_']}
@@ -61,9 +77,11 @@ def create_dictionary(tree_store, target_dict_size):
             pruned_subtree = prune_top_level_entries_by_limit(top_sorted_subtree, limit)
             
             # Re-insert the preserved score and predictions into the pruned subtree
-            if score or predictions:  # Check if there's something to re-insert
-                pruned_subtree['_'] = predictions
+            if score:
                 pruned_subtree['-'] = score
+            
+            if predictions:  # Check if there's something to re-insert
+                pruned_subtree['_'] = predictions
 
             # Recursively process each child, skipping special keys
             for k, v in list(pruned_subtree.items()):
@@ -95,6 +113,6 @@ def create_dictionary_and_tokenize(tree_store, target_dict_size):
     # First, prune and sort the dictionary based on scores
     pruned_tree = create_dictionary(tree_store, target_dict_size)
     # Then, create a token dictionary and update the tree in-place
-    token_dict = create_token_dict(pruned_tree)
+    [tokened_pruned_tree, token_dict] = create_token_dict(pruned_tree)
     
-    save_to_json_files(pruned_tree, token_dict)
+    save_to_json_files(tokened_pruned_tree, token_dict)
