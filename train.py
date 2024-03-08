@@ -127,8 +127,8 @@ def main():
                   sys.exit(0)
 
               # - is a reserved character for storing scores.
-              words = [word.replace("-", "\-") for word in words]
-              words = [word.replace("_", "\_") for word in words]
+              words = [word.replace("score", "\sscore") for word in words]
+              words = [word.replace("prediction", "\sprediction") for word in words]
               
               # Process words three at a time with shifting window
               for i in range(len(words) - 2):

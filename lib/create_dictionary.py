@@ -5,8 +5,8 @@ import asyncio
 
 SUBBRANCH_PRUNE_SIZE = 4
 MAX_PREDICTIONS = 3
-next_token = 0
-token_dict = {}
+next_token = 2 # Will be incremented by 1 on first usage.
+token_dict = {0: "score", 1: "predictions", 2: "prediction"}
 word_dict = {}
 
 def regsiter_string_with_token_dictionary(string):
@@ -29,16 +29,16 @@ def create_token_dict(tree):
         if isinstance(node, dict) and len(node.items()):
             keys = list(node.keys())
             for key in keys:
-              # Skip special keys "_" and "-"
-              if key in ["-"]:
+              # Skip special keys "predictions" and "score"
+              if key in ["score"]:
                 continue
 
-              if key == "_":
-                _keys = list(node["_"].keys())
+              if key == "predictions":
+                _keys = list(node["predictions"].keys())
                 for _key in _keys:
                   _token = regsiter_string_with_token_dictionary(_key)
-                  node["_"][_token] = node["_"].pop(_key)
-                continue
+                  node["predictions"][_token] = node["predictions"].pop(_key)
+                # continue
 
               # Register token
               token = regsiter_string_with_token_dictionary(key)
@@ -55,13 +55,13 @@ def create_token_dict(tree):
   
 def create_dictionary(tree_store, target_dict_size):
     def sort_keys_by_score(tree):
-        # Sorts the tree's top-level keys based on their child score "-", highest first
-        # Keeps the "-" key intact
+        # Sorts the tree's top-level keys based on their child score "score", highest first
+        # Keeps the "score" key intact
         sorted_items = sorted(
-            [(k, v) for k, v in tree.items() if k != '-' and isinstance(v, dict)],
-            key=lambda item: item[1]['-'] if '-' in item[1] else 0, reverse=True
+            [(k, v) for k, v in tree.items() if k != "score" and isinstance(v, dict)],
+            key=lambda item: item[1]["score"] if "score" in item[1] else 0, reverse=True
         )
-        sorted_tree = {'-': tree.get('-', 0)} if '-' in tree else {}  # Preserve "-" score if it exists
+        sorted_tree = {"score": tree.get("score", 0)} if "score" in tree else {}  # Preserve "score" score if it exists
         sorted_tree.update(dict(sorted_items))
         return sorted_tree
 
@@ -77,28 +77,28 @@ def create_dictionary(tree_store, target_dict_size):
 
     def prune_and_sort_lower_branches(subtree, limit):
         if isinstance(subtree, dict):
-            # Special handling to preserve the "-" and "_" keys correctly
-            score = subtree.get('-', False)  # Preserve the existing score, if any
-            predictions = subtree.get('_', False)  # Preserve predictions, if any
+            # Special handling to preserve the "score" and "predictions" keys correctly
+            score = subtree.get("score", False)  # Preserve the existing score, if any
+            predictions = subtree.get("predictions", False)  # Preserve predictions, if any
             
             # Filter out the special keys for sorting and pruning operations
-            filtered_subtree = {k: v for k, v in subtree.items() if k not in ['-', '_']}
+            filtered_subtree = {k: v for k, v in subtree.items() if k not in ["score", "predictions"]}
             
             top_sorted_subtree = sort_keys_by_score(filtered_subtree)
             pruned_subtree = prune_top_level_entries_by_limit(top_sorted_subtree, limit)
             
             # Re-insert the preserved score and predictions into the pruned subtree
             if score:
-                pruned_subtree['-'] = score
+                pruned_subtree["score"] = score
             
             if predictions:  # Check if there's something to re-insert
                 # Sort the dictionary by value in descending order and slice to keep only MAX_PREDICTIONS items
                 sorted_items = sorted(predictions.items(), key=lambda x: x[1], reverse=True)[:MAX_PREDICTIONS]
-                pruned_subtree['_'] = dict(sorted_items)
+                pruned_subtree["predictions"] = dict(sorted_items)
 
             # Recursively process each child, skipping special keys
             for k, v in list(pruned_subtree.items()):
-                if k not in ['-', '_'] and isinstance(v, dict):
+                if k not in ["score", "predictions"] and isinstance(v, dict):
                     pruned_subtree[k] = prune_and_sort_lower_branches(v, SUBBRANCH_PRUNE_SIZE)
                     
             return pruned_subtree
@@ -106,7 +106,7 @@ def create_dictionary(tree_store, target_dict_size):
               return subtree
 
     for k in list(top_pruned_tree.keys()):
-        if k != '-':
+        if k != "score":
             subtree = top_pruned_tree[k]
             top_pruned_tree[k] = prune_and_sort_lower_branches(subtree, SUBBRANCH_PRUNE_SIZE)
 
