@@ -131,7 +131,8 @@ async def create_dictionary_and_tokenize(tree_store, target_dict_size):
     pruned_tree = create_dictionary(tree_store, target_dict_size)
     # Then, create a token dictionary and update the tree in-place
     print("Tokenizing")
-    tokened_pruned_tree = create_token_dict(pruned_tree)
+    pruned_tree_copy = copy.deepcopy(pruned_tree)
+    tokened_pruned_tree = create_token_dict(pruned_tree_copy)
     
     save_to_dict_files(tokened_pruned_tree, token_dict)
     return
