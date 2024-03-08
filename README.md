@@ -50,3 +50,27 @@ No GPUs OS requirements or nVidia libraries needed. I run this on my Macbook Pro
 
 🪄 Tip: Run it again anytime with the `--retain` flag to pick up where you left off.
 You can hit ctrl+C to gracefully exit the training. It will try to finish what it was doing before exiting so as not to corrupt any files on the next run.
+
+## WASM Development
+
+### Installation
+
+Install Rust
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Install wasm-pack
+
+```bash
+cargo install wasm-pack
+```
+
+### Usage
+
+```bash
+cd wasm
+wasm-pack build --target web
+```
+
