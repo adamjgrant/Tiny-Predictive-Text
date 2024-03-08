@@ -2,6 +2,7 @@ import json
 import copy
 
 SUBBRANCH_PRUNE_SIZE = 4
+MAX_PREDICTIONS = 3
 next_token = 0
 token_dict = {}
 word_dict = {}
@@ -89,7 +90,9 @@ def create_dictionary(tree_store, target_dict_size):
                 pruned_subtree['-'] = score
             
             if predictions:  # Check if there's something to re-insert
-                pruned_subtree['_'] = predictions
+                # Sort the dictionary by value in descending order and slice to keep only MAX_PREDICTIONS items
+                sorted_items = sorted(predictions.items(), key=lambda x: x[1], reverse=True)[:MAX_PREDICTIONS]
+                pruned_subtree['_'] = dict(sorted_items)
 
             # Recursively process each child, skipping special keys
             for k, v in list(pruned_subtree.items()):
