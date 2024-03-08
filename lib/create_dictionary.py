@@ -117,10 +117,10 @@ def create_dictionary(tree_store, target_dict_size):
 
 def save_to_dict_files(pruned_tree, token_dict):
     print("Saving dictionaries to files.")
-    with open('wasm/dictionary.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
+    with open('dictionary.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
       msgpack.dump(pruned_tree, dict_file)
 
-    with open('wasm/tokens.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
+    with open('tokens.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
       msgpack.dump(token_dict, dict_file)
   
 async def create_dictionary_and_tokenize(tree_store, target_dict_size):

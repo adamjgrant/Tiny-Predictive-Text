@@ -1,4 +1,4 @@
-import init, { load_dictionary, load_tokens } from './pkg/your_package_name.js';
+import init, { load_dictionary, load_tokens } from './wasm/pkg/tinypredict.js';
 
 async function run() {
     await init();
