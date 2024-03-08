@@ -1,9 +1,9 @@
-use wasm_bindgen::prelude::*;
+// Updated import to reflect change from `from_read_ref` to `from_slice`.
+use rmp_serde::decode::from_slice;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use rmp_serde::decode::from_read_ref;
+use wasm_bindgen::prelude::*;
 use serde_wasm_bindgen::to_value;
-// Optional: Use web_sys for logging if needed.
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
@@ -29,21 +29,20 @@ struct Dictionary {
 
 #[wasm_bindgen]
 pub fn load_dictionary(data: &[u8]) -> Result<JsValue, JsValue> {
-    // Directly infer the type based on the context without specifying it in angle brackets.
-    let dictionary_result: Result<Dictionary, _> = from_read_ref(data);
+    // Replaced deprecated `from_read_ref` with recommended `from_slice`.
+    let dictionary_result: Result<Dictionary, _> = from_slice(data);
     match dictionary_result {
-        Ok(dictionary) => to_value(&dictionary).map_err(JsValue::from),
-        Err(e) => Err(JsValue::from_str(&e.to_string())),
+        Ok(dictionary) => to_value(&dictionary).map_err(|e| e.into()),
+        Err(e) => Err(e.to_string().into()),
     }
 }
 
 #[wasm_bindgen]
 pub fn load_tokens(data: &[u8]) -> Result<JsValue, JsValue> {
-    // Similarly, let Rust infer the type for tokens.
-    let tokens_result: Result<HashMap<i32, String>, _> = from_read_ref(data);
+    // Replaced deprecated `from_read_ref` with recommended `from_slice`.
+    let tokens_result: Result<HashMap<i32, String>, _> = from_slice(data);
     match tokens_result {
-        Ok(tokens) => to_value(&tokens).map_err(JsValue::from),
-        Err(e) => Err(JsValue::from_str(&e.to_string())),
+        Ok(tokens) => to_value(&tokens).map_err(|e| e.into()),
+        Err(e) => Err(e.to_string().into()),
     }
 }
-
