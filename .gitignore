@@ -3,6 +3,8 @@ train.csv
 train.txt
 train.bak.txt
 dictionary.js
+dictionary.json
+tokens.json
 dictionary-fingerprint.js
 dictionary-anchors.js
 dictionary-properties.js
