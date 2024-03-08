@@ -42,8 +42,8 @@ The user may end up typing characters that better fit other predictions
 No GPUs OS requirements or nVidia libraries needed. I run this on my Macbook Pro with the included version of Python.
 
 - `pip install tqdm`
-- `pip install python-slugify`
 - `pip install msgpack`
+- `pip install asyncio`
 - [Download training data](https://cdn.everything.io/datasets/blogs-news-twitter.txt.zip)
 - Save it in the root as `train.txt`.
 - Run the training with `python train.py train.txt`. Every once in a while it will optimize by pruning word set dictionaries and branches recursively. At this point (look for it in the logs) it will create the dictionary.js file the demo needs to run. Let it keep running and it will continuously improve that dictionary as it continues its training.

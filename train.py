@@ -3,13 +3,13 @@ import os
 import sys
 import shutil
 from tqdm import tqdm
-from slugify import slugify
 import signal
 import pickle
 from lib.process_predictive_words import main as process_predictive_words
 from lib.process_context_words import main as process_context_words
 from lib.finish_filing import main as finish_filing
 from lib.create_dictionary import create_dictionary_and_tokenize
+import asyncio
 
 ###########
 # RECIPES #
@@ -20,7 +20,7 @@ from lib.create_dictionary import create_dictionary_and_tokenize
 # 11.9MB: Target dictionary count 25,000,    Prune 10,000,000
 # 5.4MB:  Target dictionary count 10,000,    Prune 10,000,000
 
-PRUNE_FREQUENCY = 1000 # Every this many document positions
+PRUNE_FREQUENCY = 1000 # Every this many chunks
 CHUNK_SIZE = 1024 # 1KB per chunk
 TARGET_DICTIONARY_COUNT = 10 * 1000
 
@@ -52,14 +52,14 @@ def load_tree_store():
     except FileNotFoundError:
         return DEFAULT_TREE_STORE
 
-def save_position(progress_file, current_position, tree_store):
+async def save_position(progress_file, current_position, tree_store):
   # Every now and then save our progress.
   print(f"Saving the current position of %s" % current_position)
   # Save the current progress (file position)
   with open(progress_file, 'w') as f:
       f.write(str(current_position))
   print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
-  create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
+  await create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
 
 # Define a main function to orchestrate the training process
 def main():
@@ -145,11 +145,15 @@ def main():
 
               chunks_processed_since_prune += 1  # Increment chunk processed counter
 
-              # Every now and then, prune unpopular entries based on chunks processed
-              if chunks_processed_since_prune >= PRUNE_FREQUENCY:
-                  save_position(progress_file, file.tell(), tree_store)
+              async def save():
+                  nonlocal progress_file, tree_store, file, chunks_processed_since_prune
+                  await save_position(progress_file, file.tell(), tree_store)
                   # Reset chunk processed counter after pruning
                   chunks_processed_since_prune = 0
+
+              # Every now and then, prune unpopular entries based on chunks processed
+              if chunks_processed_since_prune >= PRUNE_FREQUENCY:
+                asyncio.run(save())
 
 
   create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)

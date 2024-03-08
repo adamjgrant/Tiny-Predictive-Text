@@ -1,6 +1,7 @@
 import json
 import msgpack
 import copy
+import asyncio
 
 SUBBRANCH_PRUNE_SIZE = 4
 MAX_PREDICTIONS = 3
@@ -111,14 +112,15 @@ def create_dictionary(tree_store, target_dict_size):
 
     return top_pruned_tree
 
-def save_to_json_files(pruned_tree, token_dict):
+def save_to_dict_files(pruned_tree, token_dict):
+    print("Saving dictionaries to files.")
     with open('dictionary.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
       msgpack.dump(pruned_tree, dict_file)
 
     with open('tokens.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
       msgpack.dump(token_dict, dict_file)
   
-def create_dictionary_and_tokenize(tree_store, target_dict_size):
+async def create_dictionary_and_tokenize(tree_store, target_dict_size):
     global token_dict
     print("Creating dictionary and tokenizing")
     # First, prune and sort the dictionary based on scores
@@ -128,4 +130,5 @@ def create_dictionary_and_tokenize(tree_store, target_dict_size):
     print("Tokenizing")
     tokened_pruned_tree = create_token_dict(pruned_tree)
     
-    save_to_json_files(tokened_pruned_tree, token_dict)
+    save_to_dict_files(tokened_pruned_tree, token_dict)
+    return
