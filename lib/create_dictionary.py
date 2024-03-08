@@ -14,7 +14,9 @@ def regsiter_string_with_token_dictionary(string, token_dict):
   return [used_token, token_dict]
 
 def create_token_dict(tree):
-    def tokenize_tree(node, token_dict):
+    token_dict = {}
+    def tokenize_tree(node):
+        nonlocal token_dict
         if isinstance(node, dict) and len(node.items()):
             keys = list(node.keys())
             for key in keys:
@@ -36,11 +38,11 @@ def create_token_dict(tree):
               node[token] = node.pop(key, None)
 
               # Recursively process the value
-              node[token], token_dict = tokenize_tree(node[token], token_dict)
+              node[token] = tokenize_tree(node[token])
 
-        return node, token_dict
+        return node
 
-    return tokenize_tree(tree, {})
+    return tokenize_tree(tree), token_dict
   
 def create_dictionary(tree_store, target_dict_size):
     def sort_keys_by_score(tree):
@@ -99,8 +101,8 @@ def create_dictionary(tree_store, target_dict_size):
 
     return top_pruned_tree
 
-
 def save_to_json_files(pruned_tree, token_dict):
+    print("Saving JSON files")
     # Save the tokenized tree to dictionary.json
     with open('dictionary.json', 'w') as dict_file:
         json.dump(pruned_tree, dict_file)
@@ -110,9 +112,12 @@ def save_to_json_files(pruned_tree, token_dict):
         json.dump(token_dict, token_file)
   
 def create_dictionary_and_tokenize(tree_store, target_dict_size):
+    print("Creating dictionary and tokenizing")
     # First, prune and sort the dictionary based on scores
+    print("Pruning")
     pruned_tree = create_dictionary(tree_store, target_dict_size)
     # Then, create a token dictionary and update the tree in-place
+    print("Tokenizing")
     [tokened_pruned_tree, token_dict] = create_token_dict(pruned_tree)
     
     save_to_json_files(tokened_pruned_tree, token_dict)
