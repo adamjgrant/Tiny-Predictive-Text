@@ -33,17 +33,15 @@ def create_token_dict(tree):
         if isinstance(node, dict) and len(node.items()):
             keys = list(node.keys())
             for key in keys:
-              # Skip special keys "predictions" and "score"
-              if key in ["score"]:
-                continue
-
               if key == "predictions":
                 prediction_dicts = list(node["predictions"])
                 for index, prediction_dict in enumerate(prediction_dicts):
                   inner_predictions = prediction_dict["prediction"]
                   inner_predictions_tokenized = list(map(lambda word: register_string_with_token_dictionary(word), inner_predictions))
-                  node["predictions"][index]["prediction"] = inner_predictions_tokenized
-                # continue
+                  node["predictions"][index].pop("prediction", None)
+                  node["predictions"][index][2] = inner_predictions_tokenized
+                  prediction_dict[0] = prediction_dict["score"]
+                  prediction_dict.pop("score", None)
 
               # Register token
               token = register_string_with_token_dictionary(key)
@@ -119,10 +117,10 @@ def create_dictionary(tree_store, target_dict_size):
 
 def save_to_dict_files(pruned_tree, token_dict):
     print("Saving dictionaries to files.")
-    with open('dictionary.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
+    with open('wasm/dictionary.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
       msgpack.dump(pruned_tree, dict_file)
 
-    with open('tokens.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
+    with open('wasm/tokens.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
       msgpack.dump(token_dict, dict_file)
   
 async def create_dictionary_and_tokenize(tree_store, target_dict_size):
