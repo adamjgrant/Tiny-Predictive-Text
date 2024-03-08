@@ -55,9 +55,8 @@ class TestCreateDictionary(unittest.TestCase):
 
     def test_token_dict(self):
       tree = {"anchor": {"score": 1, "second": {"score": 1, "first": {"score": 1, "predictions": [{ "prediction": ["a", "a2", "a3"], "score": 1}, { "prediction": ["b", "b2", "b3"], "score": 1 }, { "prediction": ["c", "c2", "c3"], "score": 1 } ]}}}} 
-      expected_tokenized_tree = {0: {"score": 1, 1: {"score": 1, 2: {"score": 1, "predictions": [{ "prediction": [3,4,5], "score": 1 }, { "prediction": [6,7,8], "score": 1 }, { "prediction": [9,10,11], "score": 1 }]}}}} 
-      expected_dict = {}
-      actual_tokenized_tree, actual_dict = create_token_dict(tree)
+      expected_tokenized_tree = {3: {"score": 1, 4: {"score": 1, 5: {"score": 1, 1: [{ "prediction": [6,7,8], "score": 1 }, { "prediction": [9,10,11], "score": 1 }, { "prediction": [12,13,14], "score": 1 }]}}}} 
+      actual_tokenized_tree = create_token_dict(tree)
 
       self.assertEqual(actual_tokenized_tree, expected_tokenized_tree)
       

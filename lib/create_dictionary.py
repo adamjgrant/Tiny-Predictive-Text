@@ -2,14 +2,18 @@ import json
 import msgpack
 import copy
 import asyncio
+import logging
+
+# Setup basic configuration for logging
+logging.basicConfig(level=logging.DEBUG)
 
 SUBBRANCH_PRUNE_SIZE = 4
 MAX_PREDICTIONS = 3
 next_token = 2 # Will be incremented by 1 on first usage.
 token_dict = {0: "score", 1: "predictions", 2: "prediction"}
-word_dict = {}
+word_dict = {"score": 0, "predictions": 1, "prediction": 2}
 
-def regsiter_string_with_token_dictionary(string):
+def register_string_with_token_dictionary(string):
   global next_token
   global token_dict
   global word_dict
@@ -34,14 +38,15 @@ def create_token_dict(tree):
                 continue
 
               if key == "predictions":
-                _keys = list(node["predictions"].keys())
-                for _key in _keys:
-                  _token = regsiter_string_with_token_dictionary(_key)
-                  node["predictions"][_token] = node["predictions"].pop(_key)
+                prediction_dicts = list(node["predictions"])
+                for index, prediction_dict in enumerate(prediction_dicts):
+                  inner_predictions = prediction_dict["prediction"]
+                  inner_predictions_tokenized = list(map(lambda word: register_string_with_token_dictionary(word), inner_predictions))
+                  node["predictions"][index]["prediction"] = inner_predictions_tokenized
                 # continue
 
               # Register token
-              token = regsiter_string_with_token_dictionary(key)
+              token = register_string_with_token_dictionary(key)
 
               # Swap out the keyname for the token.
               node[token] = node.pop(key, None)
