@@ -2,21 +2,27 @@ import json
 import copy
 
 SUBBRANCH_PRUNE_SIZE = 4
+next_token = 0
+token_dict = {}
+word_dict = {}
 
-def regsiter_string_with_token_dictionary(string, token_dict):
-  next_token = len(token_dict.keys())
+def regsiter_string_with_token_dictionary(string):
+  global next_token
+  global token_dict
+  global word_dict
 
-  if string not in token_dict.values():
+  if string not in word_dict:
+    next_token += 1
     token_dict[next_token] = string
+    word_dict[string] = next_token
 
-  used_token = list(token_dict.keys())[list(token_dict.values()).index(string)]
+  used_token = word_dict[string]
 
-  return [used_token, token_dict]
+  return used_token
 
 def create_token_dict(tree):
-    token_dict = {}
     def tokenize_tree(node):
-        nonlocal token_dict
+        global token_dict
         if isinstance(node, dict) and len(node.items()):
             keys = list(node.keys())
             for key in keys:
@@ -27,12 +33,12 @@ def create_token_dict(tree):
               if key == "_":
                 _keys = list(node["_"].keys())
                 for _key in _keys:
-                  _token, token_dict = regsiter_string_with_token_dictionary(_key, token_dict)
+                  _token = regsiter_string_with_token_dictionary(_key)
                   node["_"][_token] = node["_"].pop(_key)
                 continue
 
               # Register token
-              token, token_dict = regsiter_string_with_token_dictionary(key, token_dict)
+              token = regsiter_string_with_token_dictionary(key)
 
               # Swap out the keyname for the token.
               node[token] = node.pop(key, None)
@@ -42,7 +48,7 @@ def create_token_dict(tree):
 
         return node
 
-    return tokenize_tree(tree), token_dict
+    return tokenize_tree(tree)
   
 def create_dictionary(tree_store, target_dict_size):
     def sort_keys_by_score(tree):
@@ -112,12 +118,13 @@ def save_to_json_files(pruned_tree, token_dict):
         json.dump(token_dict, token_file)
   
 def create_dictionary_and_tokenize(tree_store, target_dict_size):
+    global token_dict
     print("Creating dictionary and tokenizing")
     # First, prune and sort the dictionary based on scores
     print("Pruning")
     pruned_tree = create_dictionary(tree_store, target_dict_size)
     # Then, create a token dictionary and update the tree in-place
     print("Tokenizing")
-    [tokened_pruned_tree, token_dict] = create_token_dict(pruned_tree)
+    tokened_pruned_tree = create_token_dict(pruned_tree)
     
     save_to_json_files(tokened_pruned_tree, token_dict)
