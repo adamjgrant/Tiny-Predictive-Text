@@ -126,13 +126,17 @@ def save_to_dict_files(pruned_tree, token_dict):
 async def create_dictionary_and_tokenize(tree_store, target_dict_size):
     global token_dict
     print("Creating dictionary and tokenizing")
+
     # First, prune and sort the dictionary based on scores
     print("Pruning")
     pruned_tree = create_dictionary(tree_store, target_dict_size)
+
     # Then, create a token dictionary and update the tree in-place
     print("Tokenizing")
     pruned_tree_copy = copy.deepcopy(pruned_tree)
+    # Allow the running program to keep working on the untokenized tree.
     tokened_pruned_tree = create_token_dict(pruned_tree_copy)
     
+    # Save to actual files.
     save_to_dict_files(tokened_pruned_tree, token_dict)
     return

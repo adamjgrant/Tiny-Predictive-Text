@@ -70,7 +70,6 @@ cargo install wasm-pack
 ### Usage
 
 ```bash
-cd wasm
-wasm-pack build --target web
+wasm-pack build --target web wasm
 ```
 

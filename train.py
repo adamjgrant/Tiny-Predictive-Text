@@ -20,7 +20,7 @@ import asyncio
 # 11.9MB: Target dictionary count 25,000,    Prune 10,000,000
 # 5.4MB:  Target dictionary count 10,000,    Prune 10,000,000
 
-PRUNE_FREQUENCY = 2 * 1000 # Every this many chunks
+PRUNE_FREQUENCY = 4 * 1000 # Every this many chunks
 CHUNK_SIZE = 1024 # 1KB per chunk
 TARGET_DICTIONARY_COUNT = 10 * 1000
 
