@@ -92,9 +92,9 @@ def create_dictionary(tree_store, target_dict_size):
                 pruned_subtree["score"] = score
             
             if predictions:  # Check if there's something to re-insert
-                # Sort the dictionary by value in descending order and slice to keep only MAX_PREDICTIONS items
-                sorted_items = sorted(predictions.items(), key=lambda x: x[1], reverse=True)[:MAX_PREDICTIONS]
-                pruned_subtree["predictions"] = dict(sorted_items)
+              # Sort the list of dictionaries by the 'score' key in descending order and slice to keep only MAX_PREDICTIONS items
+              sorted_predictions = sorted(predictions, key=lambda x: x['score'], reverse=True)[:MAX_PREDICTIONS]
+              pruned_subtree["predictions"] = sorted_predictions
 
             # Recursively process each child, skipping special keys
             for k, v in list(pruned_subtree.items()):
