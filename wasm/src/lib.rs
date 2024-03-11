@@ -76,8 +76,8 @@ fn get_inverted_token_dict() -> HashMap<String, i32> {
 #[derive(Serialize, Debug)]
 struct PredictiveTextContext {
     anchor: String,
-    first_level_context: Vec<String>,
-    second_level_context: Vec<String>,
+    first_level_context: String,
+    second_level_context: String,
 }
 
 #[wasm_bindgen]
@@ -90,19 +90,27 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
         // Anchor
         let anchor = words.last().unwrap().to_string();
         
-        // First level context
+        // First level context as an acronym
         let first_level_start = words.len().saturating_sub(4).max(0);
-        let first_level_context: Vec<String> = words[first_level_start..words.len() - 1]
-                                                .iter().map(|&word| word.to_string()).collect();
+        let first_level_context: String = words[first_level_start..words.len() - 1]
+            .iter()
+            .filter_map(|word| word.chars().next()) // Get the first char of each word
+            .map(|c| c.to_lowercase().to_string()) // Convert to lowercase string
+            .collect(); // Collect into a String, which concatenates them
         
         // Second level context
         let second_level_start = first_level_start.saturating_sub(3).max(0);
-        let second_level_context: Vec<String> = words[second_level_start..first_level_start]
-                                                 .iter().map(|&word| word.to_string()).collect();
+        let second_level_context: String = words[second_level_start..first_level_start]
+            .iter()
+            .filter_map(|word| word.chars().next()) // Get the first char of each word
+            .map(|c| c.to_lowercase().to_string()) // Convert to lowercase string
+            .collect(); // Collect into a String, which concatenates them
         
         (anchor, first_level_context, second_level_context)
     } else {
-        ("".to_string(), vec![], vec![]) // Default values if not enough words
+        // Default values if not enough words
+        // Ensure the types match: (String, String, String)
+        ("".to_string(), "".to_string(), "".to_string())
     };
 
     let context = PredictiveTextContext {
