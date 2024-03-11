@@ -42,11 +42,26 @@ pub fn load_dictionary(data: &[u8]) -> Result<JsValue, JsValue> {
     }
 }
 
+// Globally accessible, inverted token dictionary
+static mut INVERTED_TOKEN_DICT: Option<HashMap<String, i32>> = None;
+
 #[wasm_bindgen]
 pub fn load_tokens(data: &[u8]) -> Result<JsValue, JsValue> {
     let tokens_result: Result<HashMap<i32, String>, _> = from_slice(data);
     match tokens_result {
-        Ok(tokens) => to_value(&tokens).map_err(|e| e.into()),
+        Ok(tokens) => {
+            // Invert the dictionary: Map from String -> i32
+            let inverted_dict: HashMap<String, i32> = tokens.into_iter().map(|(key, val)| (val, key)).collect();
+
+            // Store the inverted dictionary for later use
+            unsafe {
+                INVERTED_TOKEN_DICT = Some(inverted_dict);
+            }
+
+            // For the purposes of this example, we return the original tokens to JS
+            // You might adjust what you return based on your application's needs
+            to_value(&tokens).map_err(|e| e.into())
+        },
         Err(e) => Err(e.to_string().into()),
     }
 }
