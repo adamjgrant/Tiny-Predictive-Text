@@ -20,3 +20,10 @@
   <div class="color_box" style="background-color: cornflowerblue;"></div> Blue = Idle
 </p>
 <script type="module" src="tinypredict.js"></script>
+<script>
+  window.addEventListener('tinypredict-ready', () => {
+    window.getPredictiveText("hello world").then(suggestions => {
+      console.log(suggestions); // Process or display the suggestions
+    });
+  });
+</script>

@@ -50,3 +50,12 @@ pub fn load_tokens(data: &[u8]) -> Result<JsValue, JsValue> {
         Err(e) => Err(e.to_string().into()),
     }
 }
+
+#[wasm_bindgen]
+pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
+    // Placeholder: Logic to generate predictive text based on the input string
+    let predictive_texts: Vec<&str> = Vec::new(); // Example: replace with actual logic to generate texts
+
+    // Convert the Rust Vec of strings to JsValue
+    to_value(&predictive_texts).map_err(|e| e.into())
+}

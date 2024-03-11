@@ -1,4 +1,4 @@
-import init, { load_dictionary, load_tokens } from './wasm/pkg/tinypredict.js';
+import init, { load_dictionary, load_tokens, get_predictive_text } from './wasm/pkg/tinypredict.js';
 
 async function run() {
     await init();
@@ -14,6 +14,23 @@ async function run() {
     const tokensBuffer = await tokensResponse.arrayBuffer();
     const tokens = load_tokens(new Uint8Array(tokensBuffer));
     console.log(tokens);
+
+    window.getPredictiveText = async function(inputText) {
+      try {
+          const suggestions = await get_predictive_text(inputText);
+          console.log("Predictive text suggestions:", suggestions);
+          return suggestions;
+      } catch (error) {
+          console.error("Error getting predictive text:", error);
+          return [];
+      }
+    }
+
+    // Dispatch a custom event to signal that the module is ready
+    const event = new CustomEvent('tinypredict-ready', {
+      detail: { getPredictiveText: window.getPredictiveText }
+    });
+    window.dispatchEvent(event);
 }
 
 run();
