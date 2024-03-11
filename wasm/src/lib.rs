@@ -70,9 +70,6 @@ pub fn load_tokens(data: &[u8]) -> Result<JsValue, JsValue> {
 lazy_static! {
   // Use Mutex to safely access and modify the dictionary across threads
   static ref INVERTED_TOKEN_DICT: Mutex<HashMap<String, i32>> = Mutex::new(HashMap::new());
-}
-
-lazy_static! {
   static ref GLOBAL_DICTIONARY: Mutex<Option<Dictionary>> = Mutex::new(None);
 }
 
@@ -90,88 +87,203 @@ struct PredictiveTextContext {
     prediction: String,
 }
 
-fn sanitize_anchor(anchor: &str) -> String {
-  anchor.chars()
-        .filter(|c| c.is_alphanumeric() || c.is_whitespace()) // Keep alphanumeric and whitespace
-        .collect::<String>()
-        .to_lowercase()
+// Placeholder function to sanitize text (removing punctuation, making lowercase)
+fn sanitize_text(text: &str) -> String {
+  text.chars()
+      .filter(|c| c.is_alphanumeric() || c.is_whitespace())
+      .collect::<String>()
+      .to_lowercase()
 }
 
+fn exclude_words<'a>(words: Vec<&'a str>) -> Vec<&'a str> {
+  let exclusions = vec![
+      "and", "or", "but", "if", "of", "at", "by", "for", "with", "to", "in", "on",
+      "am", "is", "are", "was", "were", "be", "been", "being",
+      "have", "has", "had", "having",
+      "the", "a", "an",
+  ];
+  words.into_iter()
+      .filter(|word| !exclusions.contains(word))
+      .collect()
+}
+
+fn acronymize_context(words: Vec<&str>) -> String {
+  words.iter()
+      .filter_map(|word| word.chars().next())
+      .collect::<String>()
+      .to_lowercase()
+}
+
+// Updating the process_input function to use these helpers
 fn process_input(input: &str) -> PredictiveTextContext {
-  // Placeholder for the actual processing logic
-  // This will involve sanitizing the input and splitting into anchor, first and second level contexts
-  let global_dict_lock = GLOBAL_DICTIONARY.lock().unwrap(); // Access the global tokenized dictionary
-  let global_dict = global_dict_lock.as_ref().expect("Dictionary not loaded");
+  let sanitized_input = sanitize_text(input);
+  let words: Vec<&str> = sanitized_input.split_whitespace().collect();
 
-  // Define the words to exclude from second level context acronym
-  // ⚠️ Make sure this matches the parallel implementation in process_context_words.py
-  let exclusions = ["and", "or", "but", "if", "of", "at", "by", "for", "with", "to", "in", "on", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "the", "a", "an"];
+  // Ensure there's at least one word to use as anchor
+  if let Some(anchor) = words.last() {
+      // Sanitize and lookup the anchor token
+      let anchor_token = dict.get(&sanitize_text(anchor)).cloned().unwrap_or(-1);
 
-  let words: Vec<&str> = input.split_whitespace().collect();
-  let anchor = words.last().unwrap().to_string();
-  let anchor_token = dict.get(&*anchor).cloned().unwrap_or(-1); // Use -1 as a placeholder if not found
+      // Compute first level context
+      let first_level_words = words.iter().rev().skip(1).take(3).collect::<Vec<_>>();
+      let first_level_context = acronymize_context(first_level_words);
 
-  PredictiveTextContext {
-      anchor: anchor,
-      anchor_token: anchor_token,
-      first_level_context: String::new(),
-      second_level_context: String::new(),
-      prediction: String::new(), // Empty initially
+      // Compute second level context
+      let second_level_start = words.len().saturating_sub(7).max(0);
+      let second_level_words = exclude_words(words.iter().skip(second_level_start).take(3).collect());
+      let second_level_context = acronymize_context(second_level_words);
+
+      PredictiveTextContext {
+          anchor: anchor.to_string(),
+          anchor_token,
+          first_level_context,
+          second_level_context,
+          prediction: String::new(), // Empty initially, to be filled later
+      }
+  } else {
+      // Return empty context if input is not sufficient
+      PredictiveTextContext {
+          anchor: String::new(),
+          anchor_token: -1,
+          first_level_context: String::new(),
+          second_level_context: String::new(),
+          prediction: String::new(),
+      }
   }
 }
 
-fn filter_dictionary_on_anchor(processed_input: &PredictiveTextContext, global_dict: &Dictionary) -> Option<&Node> {
-  // Convert the anchor to a token using your inverted token dictionary
-  // Lookup this token in the global dictionary and return the filtered part
+fn filter_dictionary_on_anchor(processed_input: &PredictiveTextContext) -> (PredictiveTextContext, Option<&Node>) {
+  // Access the global dictionary. Assuming it's loaded into GLOBAL_DICTIONARY.
+  let global_dict_lock = INVERTED_TOKEN_DICT.lock().unwrap();
+  let global_dict = global_dict_lock.as_ref().expect("Global dictionary not loaded");
 
-  // Use anchor_token to filter the dictionary
-  // TODO this should get the anchor token from the key on processed_input
-  let anchor_token = processed_input.get(&anchor_token);
+  // Attempt to retrieve the node corresponding to the anchor token from the global dictionary
+  let filtered_node = global_dict.get(&processed_input.anchor_token);
+
+  // Create a new instance of PredictiveTextContext with potential updates
+  let updated_context = PredictiveTextContext {
+      // Carry over all existing fields from processed_input
+      anchor: processed_input.anchor.clone(),
+      anchor_token: processed_input.anchor_token,
+      first_level_context: processed_input.first_level_context.clone(),
+      second_level_context: processed_input.second_level_context.clone(),
+      // Update the prediction field or any other field as necessary
+      prediction: processed_input.prediction.clone(),
+  };
+
+  // Return the updated context along with the filtered node (if found)
+  (updated_context, filtered_node)
+}
+
+fn match_first_level_context(
+  first_level_context: &str, 
+  filtered_dict: &Node, 
+  dict_token_to_string: &HashMap<i32, String>
+) -> Option<&Node> {
+  // Convert filtered_dict to a string-based representation if necessary
+  // Assuming filtered_dict somehow allows access to the next level keys
   
-  // TODO use the variable anchor_token above to get a value from the global_dict and set equal to filtered_dict.
-  let filtered_dict = global_dict.get(&anchor_token);
-  None // Placeholder
+  // Placeholder: Transform filtered_dict if necessary to work with strings
+
+  // Exact match
+  if let Some(node) = filtered_dict.next_level.get(first_level_context) {
+      return Some(node);
+  }
+
+  // Closest match by one character difference or most characters in common
+  let closest_match = filtered_dict.next_level.keys()
+      .map(|key| dict_token_to_string.get(key).unwrap_or(&"".to_string()))
+      .filter(|&key_str| /* your logic to determine closeness */ false)
+      .next(); // Assuming this gets the closest match key as &str
+
+  // Return the node corresponding to the closest match
+  closest_match.and_then(|key| filtered_dict.next_level.get(key))
 }
 
-fn filter_on_first_level_context(processed_input: &PredictiveTextContext, filtered_dict: &Node) -> Option<&Node> {
-  let dict = get_inverted_token_dict(); // Token -> String dictionary
 
-  // First level context as an acronym
-  let first_level_start = words.len().saturating_sub(4).max(0);
-  let first_level_context: String = words[first_level_start..words.len() - 1]
-      .iter()
-      .filter_map(|word| word.chars().next()) // Get the first char of each word
-      .map(|c| c.to_lowercase().to_string()) // Convert to lowercase string
-      .collect(); // Collect into a String, which concatenates them
-  // Perform matching logic on the first level context against the filtered dictionary
-  None // Placeholder
+fn filter_on_first_level_context( processed_input: &PredictiveTextContext, anchor_filtered_dictionary: Option<&Node>,) -> (PredictiveTextContext, Option<&Node>) {
+  // Access the global inverted token dictionary to convert token IDs to strings
+  let dict_lock = INVERTED_TOKEN_DICT.lock().unwrap();
+  let dict_token_to_string = dict_lock.clone(); // Clone for usage in this context
+
+  // Continue with the function implementation
+  if let Some(filtered_dict) = anchor_filtered_dictionary {
+      let first_level_context = &processed_input.first_level_context;
+      // Assuming match_first_level_context is defined and uses dict_token_to_string
+      let first_level_context_filtered_node = match_first_level_context(
+          first_level_context,
+          filtered_dict,
+          &dict_token_to_string
+      );
+
+      // Clone processed_input to create a potentially updated context
+      let updated_context = PredictiveTextContext {
+          anchor: processed_input.anchor.clone(),
+          anchor_token: processed_input.anchor_token,
+          first_level_context: processed_input.first_level_context.clone(),
+          second_level_context: processed_input.second_level_context.clone(),
+          prediction: processed_input.prediction.clone(), // Initially empty, updated later
+      };
+
+      // Return both the updated context and the node filtered by the first level context
+      (updated_context, first_level_context_filtered_node)
+  } else {
+      // Return empty context if input is not sufficient or no anchor filtered dictionary is available
+      (processed_input.clone(), None)
+  }
 }
 
-fn filter_on_second_level_context(processed_input: &PredictiveTextContext, further_filtered_dict: &Node) -> Option<&Node> {
-  // Perform matching logic on the second level context
+fn filter_on_second_level_context( processed_input: &PredictiveTextContext, first_level_context_filtered_dictionary: Option<&Node>) -> (PredictiveTextContext, Option<&Node>) {
+  // Assuming you have access to a conversion function or method to interpret tokens to strings if needed
 
-  // Second level context without specified words, then as an acronym
-  let second_level_start = first_level_start.saturating_sub(3).max(0);
-  let second_level_context: String = words[second_level_start..first_level_start]
-      .iter()
-      .filter(|&&word| !exclusions.contains(&word)) // Exclude specified words
-      .filter_map(|word| word.chars().next()) // Get the first char of each remaining word
-      .map(|c| c.to_lowercase().to_string()) // Convert to lowercase string
-      .collect(); // Collect into a String, which concatenates them
-  None // Placeholder
+  let second_level_context = &processed_input.second_level_context;
+
+  // This variable holds the potential match for second level context within the dictionary
+  let second_level_context_filtered_node: Option<&Node> = None;
+
+  if let Some(Node::Map(flc_map)) = first_level_context_filtered_dictionary {
+      // Loop through each key-value pair in the FLC filtered dictionary
+      for (key, value) in flc_map {
+          // Convert key (if it's a token) to string and compare or directly compare if it's already a string
+          // Here, you might need a mechanism to convert or match the context as you're working with a more nuanced matching logic
+          // Assuming 'match_second_level_context' is a function you'd implement
+          if let Some(matching_node) = match_second_level_context(second_level_context, key, value) {
+              second_level_context_filtered_node = Some(matching_node);
+              break; // Exit loop early if a match is found
+          }
+      }
+  }
+
+  // Return both the input context and the node filtered by the second level context
+  // Note: This is a basic skeleton, adjust according to your actual logic and matching criteria
+  (
+      processed_input.clone(), // Assuming you may update the context based on this step in your actual implementation
+      second_level_context_filtered_node
+  )
 }
 
 #[wasm_bindgen]
 pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
-    let context = PredictiveTextContext {
-        anchor,
-        anchor_token,
-        first_level_context,
-        second_level_context,
-        prediction: prediction.to_string(), // Include the prediction
-    };
+    // Process the input to split into sanitized anchor, first and second level contexts
+    let processed_input = process_input(input);
 
-    // Convert the struct into JsValue
-    to_value(&context).map_err(|e| e.into())
+    // At this point, you would filter the global dictionary based on the processed input
+    // This might involve several steps, such as:
+    // 1. Filtering on the anchor token (if your design includes this step)
+    let (updated_context_after_filtering_anchor, anchor_filtered_dictionary) = filter_dictionary_on_anchor(&processed_input);
+
+    // 2. Filtering based on the first level context
+    let (updated_context_after_filtering_first_level_context, first_level_context_filtered_dictionary) = filter_on_first_level_context(updated_context_after_filtering_anchor, anchor_filtered_dictionary)
+
+    // 3. Filtering based on the second level context
+    let (updated_context_after_filtering_second_level_context, second_level_context_filtered_dictionary) = filter_on_second_level_context(updated_context_after_filtering_first_level_context, first_level_context_filtered_dictionary)
+
+    // For demonstration, let's assume filter_on_first_level_context and filter_on_second_level_context
+    // are implemented to take processed_input and return something meaningful
+    // let first_level_filtered = filter_on_first_level_context(&processed_input, &GLOBAL_DICTIONARY);
+    // let second_level_filtered = filter_on_second_level_context(&first_level_filtered, &GLOBAL_DICTIONARY);
+
+    // For now, simply return the processed input as a JsValue
+    to_value(&updated_context_after_filtering_second_level_context).map_err(|e| e.into())
 }
 
