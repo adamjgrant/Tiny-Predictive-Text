@@ -39,7 +39,11 @@ struct Item {
 pub fn load_dictionary(data: &[u8]) -> Result<JsValue, JsValue> {
     let dictionary_result: Result<Dictionary, _> = from_slice(data);
     match dictionary_result {
-        Ok(dictionary) => to_value(&dictionary).map_err(|e| e.into()),
+        Ok(dictionary) => {
+            let mut global_dict = GLOBAL_DICTIONARY.lock().unwrap();
+            *global_dict = Some(dictionary);
+            Ok(JsValue::TRUE) // Indicate success differently if needed
+        },
         Err(e) => Err(e.to_string().into()),
     }
 }
@@ -68,6 +72,10 @@ lazy_static! {
   static ref INVERTED_TOKEN_DICT: Mutex<HashMap<String, i32>> = Mutex::new(HashMap::new());
 }
 
+lazy_static! {
+  static ref GLOBAL_DICTIONARY: Mutex<Option<Dictionary>> = Mutex::new(None);
+}
+
 fn get_inverted_token_dict() -> HashMap<String, i32> {
   let dict_lock = INVERTED_TOKEN_DICT.lock().unwrap();
   dict_lock.clone() // Cloning here for simplicity; consider other patterns for large dictionaries
@@ -76,22 +84,25 @@ fn get_inverted_token_dict() -> HashMap<String, i32> {
 #[derive(Serialize, Debug)]
 struct PredictiveTextContext {
     anchor: String,
+    anchor_token: i32,
     first_level_context: String,
     second_level_context: String,
+    prediction: String,
 }
 
 #[wasm_bindgen]
 pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
     let dict = get_inverted_token_dict();
     let words: Vec<&str> = input.split_whitespace().collect();
-    let tokens: Vec<i32> = words.iter().filter_map(|&word| dict.get(word).cloned()).collect();
 
     // Define the words to exclude from second level context acronym
+    // ⚠️ Make sure this matches the parallel implementation in process_context_words.py
     let exclusions = ["and", "or", "but", "if", "of", "at", "by", "for", "with", "to", "in", "on", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "the", "a", "an"];
 
-    let (anchor, first_level_context, second_level_context) = if words.len() > 3 {
+    let (anchor, anchor_token, first_level_context, second_level_context) = if words.len() > 3 {
         // Anchor
         let anchor = words.last().unwrap().to_string();
+        let anchor_token = dict.get(&*anchor).cloned().unwrap_or(-1); // Use -1 as a placeholder if not found
         
         // First level context as an acronym
         let first_level_start = words.len().saturating_sub(4).max(0);
@@ -110,16 +121,36 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
             .map(|c| c.to_lowercase().to_string()) // Convert to lowercase string
             .collect(); // Collect into a String, which concatenates them
         
-        (anchor, first_level_context, second_level_context)
+        (anchor, anchor_token, first_level_context, second_level_context)
     } else {
         // Default values if not enough words
-        ("".to_string(), "".to_string(), "".to_string())
+        ("".to_string(), -1, "".to_string(), "".to_string())
+    };
+
+    // Attempt to lock and access the global dictionary
+    let global_dict_lock = GLOBAL_DICTIONARY.lock().unwrap();
+    let global_dict = global_dict_lock.as_ref().expect("Dictionary not loaded");
+
+    // Use anchor_token to filter the dictionary
+    let filtered_dict = global_dict.get(&anchor_token);
+
+    // Generate a prediction based on the filtered dictionary
+    // Placeholder: Replace this with your logic to generate a prediction based on filtered_dict
+    let prediction = match filtered_dict {
+      Some(Node::Map(first_level_map)) => {
+          // Here, you could further filter by first_level_context and second_level_context
+          // and then generate your prediction
+          "Filtered prediction placeholder".to_string()
+      },
+      _ => "No prediction available".to_string(),
     };
 
     let context = PredictiveTextContext {
         anchor,
+        anchor_token,
         first_level_context,
         second_level_context,
+        prediction: prediction.to_string(), // Include the prediction
     };
 
     // Convert the struct into JsValue
