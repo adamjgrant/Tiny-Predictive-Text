@@ -1,3 +1,4 @@
+# ⚠️ Make sure this matches the parallel implementation in lib.rs.
 PREPOSITIONS = ["and", "or", "but", "if", "of", "at", "by", "for", "with", "to", "in", "on"] 
 TO_BE = ["am", "is", "are", "was", "were", "be", "been", "being"]
 TO_HAVE = ["have", "has", "had", "having"]

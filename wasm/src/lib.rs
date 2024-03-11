@@ -86,6 +86,9 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
     let words: Vec<&str> = input.split_whitespace().collect();
     let tokens: Vec<i32> = words.iter().filter_map(|&word| dict.get(word).cloned()).collect();
 
+    // Define the words to exclude from second level context acronym
+    let exclusions = ["and", "or", "but", "if", "of", "at", "by", "for", "with", "to", "in", "on", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "the", "a", "an"];
+
     let (anchor, first_level_context, second_level_context) = if words.len() > 3 {
         // Anchor
         let anchor = words.last().unwrap().to_string();
@@ -98,18 +101,18 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
             .map(|c| c.to_lowercase().to_string()) // Convert to lowercase string
             .collect(); // Collect into a String, which concatenates them
         
-        // Second level context
+        // Second level context without specified words, then as an acronym
         let second_level_start = first_level_start.saturating_sub(3).max(0);
         let second_level_context: String = words[second_level_start..first_level_start]
             .iter()
-            .filter_map(|word| word.chars().next()) // Get the first char of each word
+            .filter(|&&word| !exclusions.contains(&word)) // Exclude specified words
+            .filter_map(|word| word.chars().next()) // Get the first char of each remaining word
             .map(|c| c.to_lowercase().to_string()) // Convert to lowercase string
             .collect(); // Collect into a String, which concatenates them
         
         (anchor, first_level_context, second_level_context)
     } else {
         // Default values if not enough words
-        // Ensure the types match: (String, String, String)
         ("".to_string(), "".to_string(), "".to_string())
     };
 
@@ -122,3 +125,4 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
     // Convert the struct into JsValue
     to_value(&context).map_err(|e| e.into())
 }
+
