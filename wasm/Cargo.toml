@@ -12,6 +12,12 @@ serde-wasm-bindgen = "0.6.5"
 rmp-serde = "1.1.2"
 web-sys = "0.3"
 lazy_static = "1.4.0"
+log = "0.4"
+console_log = "0.2"
+strsim = "0.10.0"
 
 [lib]
 crate-type = ["cdylib"]
+
+[profile.release]
+debug = true

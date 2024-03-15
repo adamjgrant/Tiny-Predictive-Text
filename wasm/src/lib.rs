@@ -5,6 +5,9 @@ use wasm_bindgen::prelude::*;
 use serde_wasm_bindgen::to_value;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
+use std::sync::MutexGuard;
+extern crate web_sys;
+use strsim::levenshtein;
 
 // Represents the top-level structure: a map from integers to nodes
 type Dictionary = HashMap<i32, Node>; // Renamed from TopLevel for clarity
@@ -172,26 +175,33 @@ fn match_first_level_context(
   filtered_dict: &Node,
   dict_token_to_string: &HashMap<String, i32>,
 ) -> Option<Node> {
-  if let Node::Map(sub_map) = filtered_dict {
-      // Convert numeric keys to strings and find a match based on `first_level_context`
-      let matching_node = sub_map.iter()
-          .filter_map(|(&key, value)| {
-              // Assuming there's a way to get a string representation of `key`
-              let key_str = dict_token_to_string.iter().find_map(|(s, &k)| if k == key { Some(s) } else { None });
-              
-              // Use `first_level_context` to find a matching or closest matching string key
-              match key_str {
-                  Some(key_str) if key_str == first_level_context => Some(value.clone()),
-                  // Add logic for closest match if necessary
-                  _ => None,
-              }
-          })
-          .next(); // Take the first match if any
+    if let Node::Map(sub_map) = filtered_dict {
+        // Initialize a variable to keep track of the closest match
+        let mut closest_match: Option<(&Node, usize)> = None;
 
-      matching_node
-  } else {
-      None
-  }
+        for (&key, value) in sub_map {
+            if let Some(key_str) = dict_token_to_string.iter().find_map(|(s, &k)| if k == key { Some(s) } else { None }) {
+                let distance = levenshtein(&first_level_context, key_str);
+
+                // Decide on a threshold for "closeness"
+                let threshold = 3;
+
+                // Update closest_match if this key is closer than the current closest
+                if distance <= threshold {
+                    match closest_match {
+                        None => closest_match = Some((value, distance)),
+                        Some((_, prev_distance)) if distance < prev_distance => closest_match = Some((value, distance)),
+                        _ => (),
+                    }
+                }
+            }
+        }
+
+        // Return the closest matching node, if any
+        closest_match.map(|(node, _)| node.clone())
+    } else {
+        None
+    }
 }
 
 fn filter_on_first_level_context(
@@ -209,6 +219,7 @@ fn filter_on_first_level_context(
           anchor_filtered_dictionary,
           &dict_lock // Pass reference directly without cloning
       );
+      web_sys::console::log_1(&to_value(&first_level_context_filtered_node).unwrap_or_else(|_| JsValue::UNDEFINED));
 
       let updated_context = processed_input.clone(); // Clone processed_input to create a potentially updated context
       (updated_context, first_level_context_filtered_node) // Return both the updated context and the node
@@ -264,10 +275,16 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
     let (updated_context_after_filtering_anchor, anchor_filtered_dictionary) = filter_dictionary_on_anchor(&processed_input);
 
     // 2. Filtering based on the first level context
-    let (updated_context_after_filtering_first_level_context, first_level_context_filtered_dictionary) = filter_on_first_level_context(&updated_context_after_filtering_anchor, &anchor_filtered_dictionary.unwrap());
+    let (updated_context_after_filtering_first_level_context, first_level_context_filtered_dictionary) = filter_on_first_level_context(&updated_context_after_filtering_anchor, anchor_filtered_dictionary.as_ref().unwrap());
+
+    // let debug_info_1 = (updated_context_after_filtering_anchor, anchor_filtered_dictionary);
+    // return serde_wasm_bindgen::to_value(&debug_info_1).map_err(|e| e.into());
 
     // 3. Filtering based on the second level context
-    let (updated_context_after_filtering_second_level_context, second_level_context_filtered_dictionary) = filter_on_second_level_context(&updated_context_after_filtering_first_level_context, &first_level_context_filtered_dictionary.unwrap());
+    let (updated_context_after_filtering_second_level_context, second_level_context_filtered_dictionary) = filter_on_second_level_context(&updated_context_after_filtering_first_level_context, &first_level_context_filtered_dictionary.as_ref().unwrap());
+    // Debugging: Return early after filtering based on the first level context
+    // let debug_info_2 = (updated_context_after_filtering_first_level_context, first_level_context_filtered_dictionary);
+    // return serde_wasm_bindgen::to_value(&debug_info_2).map_err(|e| e.into());
 
     // For demonstration, let's assume filter_on_first_level_context and filter_on_second_level_context
     // are implemented to take processed_input and return something meaningful
@@ -277,4 +294,3 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
     // For now, simply return the processed input as a JsValue
     to_value(&updated_context_after_filtering_second_level_context).map_err(|e| e.into())
 }
-
