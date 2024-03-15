@@ -176,28 +176,20 @@ fn match_first_level_context(
   dict_token_to_string: &HashMap<String, i32>,
 ) -> Option<Node> {
     if let Node::Map(sub_map) = filtered_dict {
-        // Initialize a variable to keep track of the closest match
         let mut closest_match: Option<(&Node, usize)> = None;
 
         for (&key, value) in sub_map {
             if let Some(key_str) = dict_token_to_string.iter().find_map(|(s, &k)| if k == key { Some(s) } else { None }) {
-                let distance = levenshtein(&first_level_context, key_str);
+                let distance = levenshtein(first_level_context, key_str);
 
-                // Decide on a threshold for "closeness"
-                let threshold = 3;
-
-                // Update closest_match if this key is closer than the current closest
-                if distance <= threshold {
-                    match closest_match {
-                        None => closest_match = Some((value, distance)),
-                        Some((_, prev_distance)) if distance < prev_distance => closest_match = Some((value, distance)),
-                        _ => (),
-                    }
+                match closest_match {
+                    None => closest_match = Some((value, distance)),
+                    Some((_, prev_distance)) if distance < prev_distance => closest_match = Some((value, distance)),
+                    _ => (),
                 }
             }
         }
 
-        // Return the closest matching node, if any
         closest_match.map(|(node, _)| node.clone())
     } else {
         None
@@ -294,3 +286,13 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
     // For now, simply return the processed input as a JsValue
     to_value(&updated_context_after_filtering_second_level_context).map_err(|e| e.into())
 }
+
+// Where I left off:
+// I think filtering on the first level context works okay. I'm now wondering whether or not its giving
+// me back just the one best match at that key-level, because I'd want the second level filtering to just
+// jump down a key-level and do the same with the second level context and I'm not sure that's what it's doing.
+// 
+// Maybe what would be useful is to get the msgpack to look right, without the score values and things we don't 
+// need in the final printing. Better yet, if we can make a miniature version of it, and the token dict that we
+// just use for testing. That way we can actually see where we are in the dict structure—which is super not clear
+// from debugging right now.
