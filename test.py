@@ -55,7 +55,7 @@ class TestCreateDictionary(unittest.TestCase):
 
     def test_token_dict(self):
       tree = {"anchor": {"score": 1, "second": {"score": 1, "first": {"score": 1, "predictions": [{ "prediction": ["a", "a2", "a3"], "score": 1}, { "prediction": ["b", "b2", "b3"], "score": 1 }, { "prediction": ["c", "c2", "c3"], "score": 1 } ]}}}} 
-      expected_tokenized_tree = {1: {2: {3: {0: [[4,5,6], [7,8,9], [10,11,12]]}}}} 
+      expected_tokenized_tree = {1: {2: {3: [[4,5,6], [7,8,9], [10,11,12]]}}} 
       simplified = remove_scores_and_flatten_predictions(tree)
       actual_tokenized_tree = create_token_dict(simplified)
 
