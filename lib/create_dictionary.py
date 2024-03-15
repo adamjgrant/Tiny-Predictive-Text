@@ -10,8 +10,8 @@ logging.basicConfig(level=logging.DEBUG)
 SUBBRANCH_PRUNE_SIZE = 4
 MAX_PREDICTIONS = 3
 next_token = 0 # Will be incremented by 1 on first usage.
-token_dict = {0: "predictions"}
-word_dict = {"predictions": 0}
+token_dict = {0: "hello"}
+word_dict = {"hello": 0}
 
 def register_string_with_token_dictionary(string):
   global next_token
@@ -33,8 +33,9 @@ def create_token_dict(tree):
         if isinstance(node, dict) and len(node.items()):
             keys = list(node.keys())
             for key in keys:
-              if key == "predictions":
-                prediction_super_array = list(node["predictions"])
+              value = node[key]
+              if isinstance(value, list):
+                prediction_super_array = list(node[key])
                 for index, prediction_array in enumerate(prediction_super_array):
                     tokenized_prediction_array = list(map(lambda word: register_string_with_token_dictionary(word), prediction_array)) 
                     node[key][index] = tokenized_prediction_array
@@ -113,19 +114,28 @@ def create_dictionary(tree_store, target_dict_size):
 
 def remove_scores_and_flatten_predictions(tree):
     if isinstance(tree, dict):
-        # If the tree is a dictionary, iterate over its keys
-        keys_list = list(tree.keys())  # List of keys to iterate over, avoiding 'RuntimeError: dictionary changed size during iteration'
+        keys_list = list(tree.keys())  # Create a list of keys to iterate
         for key in keys_list:
             if key == "score":
                 # Remove the 'score' key
                 tree.pop(key)
             elif key == "predictions" and isinstance(tree[key], list):
-                # Flatten the 'predictions' array
-                tree[key] = [pred["prediction"] for pred in tree[key] if "prediction" in pred]
+                # Directly replace the current dictionary with the flattened 'predictions' array
+                return [pred["prediction"] for pred in tree[key] if "prediction" in pred]
             else:
-                # Recurse for nested dictionaries
-                remove_scores_and_flatten_predictions(tree[key])
+                # Recursively process nested dictionaries
+                result = remove_scores_and_flatten_predictions(tree[key])
+                if isinstance(result, list):
+                    # If the recursion returns a list, it means we've encountered and processed a 'predictions' key
+                    # Replace the current dictionary content with this list
+                    tree[key] = result
+                # Note: No need for an else block, as modifications are made in place
+    elif isinstance(tree, list):
+        # Process each item in the list, as it might be a list of dictionaries
+        for i, item in enumerate(tree):
+            tree[i] = remove_scores_and_flatten_predictions(item)
     return tree
+
 
 def save_to_dict_files(pruned_tree, token_dict):
     print("Saving dictionaries to files.")
