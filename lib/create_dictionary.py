@@ -9,9 +9,9 @@ logging.basicConfig(level=logging.DEBUG)
 
 SUBBRANCH_PRUNE_SIZE = 4
 MAX_PREDICTIONS = 3
-next_token = 2 # Will be incremented by 1 on first usage.
-token_dict = {0: "score", 1: "predictions", 2: "prediction"}
-word_dict = {"score": 0, "predictions": 1, "prediction": 2}
+next_token = 0 # Will be incremented by 1 on first usage.
+token_dict = {0: "predictions"}
+word_dict = {"predictions": 0}
 
 def register_string_with_token_dictionary(string):
   global next_token
@@ -34,14 +34,10 @@ def create_token_dict(tree):
             keys = list(node.keys())
             for key in keys:
               if key == "predictions":
-                prediction_dicts = list(node["predictions"])
-                for index, prediction_dict in enumerate(prediction_dicts):
-                  inner_predictions = prediction_dict["prediction"]
-                  inner_predictions_tokenized = list(map(lambda word: register_string_with_token_dictionary(word), inner_predictions))
-                  node["predictions"][index].pop("prediction", None)
-                  node["predictions"][index][2] = inner_predictions_tokenized
-                  prediction_dict[0] = prediction_dict["score"]
-                  prediction_dict.pop("score", None)
+                prediction_super_array = list(node["predictions"])
+                for index, prediction_array in enumerate(prediction_super_array):
+                    tokenized_prediction_array = list(map(lambda word: register_string_with_token_dictionary(word), prediction_array)) 
+                    node[key][index] = tokenized_prediction_array
 
               # Register token
               token = register_string_with_token_dictionary(key)
@@ -115,6 +111,22 @@ def create_dictionary(tree_store, target_dict_size):
 
     return top_pruned_tree
 
+def remove_scores_and_flatten_predictions(tree):
+    if isinstance(tree, dict):
+        # If the tree is a dictionary, iterate over its keys
+        keys_list = list(tree.keys())  # List of keys to iterate over, avoiding 'RuntimeError: dictionary changed size during iteration'
+        for key in keys_list:
+            if key == "score":
+                # Remove the 'score' key
+                tree.pop(key)
+            elif key == "predictions" and isinstance(tree[key], list):
+                # Flatten the 'predictions' array
+                tree[key] = [pred["prediction"] for pred in tree[key] if "prediction" in pred]
+            else:
+                # Recurse for nested dictionaries
+                remove_scores_and_flatten_predictions(tree[key])
+    return tree
+
 def save_to_dict_files(pruned_tree, token_dict):
     print("Saving dictionaries to files.")
     with open('dictionary.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
@@ -131,11 +143,14 @@ async def create_dictionary_and_tokenize(tree_store, target_dict_size):
     print("Pruning")
     pruned_tree = create_dictionary(tree_store, target_dict_size)
 
+    # Remove score values and other complications we don't need in the final dict.
+    print("Simplifying")
+    # Allow the running program to keep working on the unsimplified and untokenized tree.
+    simplified_pruned_tree = remove_scores_and_flatten_predictions(copy.deepcopy(pruned_tree))
+
     # Then, create a token dictionary and update the tree in-place
     print("Tokenizing")
-    pruned_tree_copy = copy.deepcopy(pruned_tree)
-    # Allow the running program to keep working on the untokenized tree.
-    tokened_pruned_tree = create_token_dict(pruned_tree_copy)
+    tokened_pruned_tree = create_token_dict(simplified_pruned_tree)
     
     # Save to actual files.
     save_to_dict_files(tokened_pruned_tree, token_dict)

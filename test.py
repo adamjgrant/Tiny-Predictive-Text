@@ -1,7 +1,7 @@
 import unittest
 
 from lib.finish_filing import main as finish_filing
-from lib.create_dictionary import create_dictionary, create_dictionary_and_tokenize, create_token_dict
+from lib.create_dictionary import create_dictionary, create_token_dict, remove_scores_and_flatten_predictions
 
 class TestFiling(unittest.TestCase):
     def test_basic_input(self):
@@ -55,8 +55,9 @@ class TestCreateDictionary(unittest.TestCase):
 
     def test_token_dict(self):
       tree = {"anchor": {"score": 1, "second": {"score": 1, "first": {"score": 1, "predictions": [{ "prediction": ["a", "a2", "a3"], "score": 1}, { "prediction": ["b", "b2", "b3"], "score": 1 }, { "prediction": ["c", "c2", "c3"], "score": 1 } ]}}}} 
-      expected_tokenized_tree = {3: {0: 1, 4: {0: 1, 5: {0: 1, 1: [{ 2: [6,7,8], 0: 1 }, { 2: [9,10,11], 0: 1 }, { 2: [12,13,14], 0: 1 }]}}}} 
-      actual_tokenized_tree = create_token_dict(tree)
+      expected_tokenized_tree = {1: {2: {3: {0: [[4,5,6], [7,8,9], [10,11,12]]}}}} 
+      simplified = remove_scores_and_flatten_predictions(tree)
+      actual_tokenized_tree = create_token_dict(simplified)
 
       self.assertEqual(actual_tokenized_tree, expected_tokenized_tree)
       
