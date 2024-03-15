@@ -134,6 +134,35 @@ def save_to_dict_files(pruned_tree, token_dict):
 
     with open('tokens.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
       msgpack.dump(token_dict, dict_file)
+
+def save_test_dict_files():
+  print("Creating test dict files")
+  dict_tree = {
+    "anchor": {
+      "one": {
+        "two": [
+          ["I", "love", "you"], ["how's", "it", "hanging?"]
+        ]
+      }
+    }
+  }
+  token_dict = {
+    0: "anchor",
+    1: "one",
+    2: "two",
+    3: "I",
+    4: "love",
+    5: "you",
+    6: "how's",
+    7: "it",
+    8: "hanging?"
+  }
+
+  with open('dictionary-test.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
+    msgpack.dump(dict_tree, dict_file)
+
+  with open('tokens-test.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
+    msgpack.dump(token_dict, dict_file)
   
 async def create_dictionary_and_tokenize(tree_store, target_dict_size):
     global token_dict
@@ -154,4 +183,7 @@ async def create_dictionary_and_tokenize(tree_store, target_dict_size):
     
     # Save to actual files.
     save_to_dict_files(tokened_pruned_tree, token_dict)
+
+    # Save files for testing with wasm and stuff.
+    save_test_dict_files()
     return
