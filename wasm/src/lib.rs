@@ -9,15 +9,12 @@ use std::sync::MutexGuard;
 extern crate web_sys;
 use strsim::levenshtein;
 
-// Represents the top-level structure: a map from integers to nodes
-type Dictionary = HashMap<i32, Node>; // Renamed from TopLevel for clarity
-
 #[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 enum Node {
     Value(i32),
     Map(HashMap<i32, Node>),
-    List(Vec<ListItem>),
+    List(Vec<Vec<i32>>),  // Directly support lists of lists of integers
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -70,10 +67,11 @@ pub fn load_tokens(data: &[u8]) -> Result<JsValue, JsValue> {
     }
 }
 
+type Dictionary = HashMap<i32, Node>;
+
 lazy_static! {
-  // Use Mutex to safely access and modify the dictionary across threads
-  static ref INVERTED_TOKEN_DICT: Mutex<HashMap<String, i32>> = Mutex::new(HashMap::new());
-  static ref GLOBAL_DICTIONARY: Mutex<Option<Dictionary>> = Mutex::new(None);
+    static ref INVERTED_TOKEN_DICT: Mutex<HashMap<String, i32>> = Mutex::new(HashMap::new());
+    static ref GLOBAL_DICTIONARY: Mutex<Option<Dictionary>> = Mutex::new(None);
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]

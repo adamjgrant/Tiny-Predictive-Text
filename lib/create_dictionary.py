@@ -147,11 +147,20 @@ def save_to_dict_files(pruned_tree, token_dict):
 
 def save_test_dict_files():
   print("Creating test dict files")
+  # dict_tree = {
+  #   "anchor": {
+  #     "one": {
+  #       "two": [
+  #         ["I", "love", "you"], ["how's", "it", "hanging?"]
+  #       ]
+  #     }
+  #   }
+  # }
   dict_tree = {
-    "anchor": {
-      "one": {
-        "two": [
-          ["I", "love", "you"], ["how's", "it", "hanging?"]
+    0: {
+      1: {
+        2: [
+          [3,4,5],[6,7,8]
         ]
       }
     }
