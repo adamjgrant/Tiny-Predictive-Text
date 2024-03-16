@@ -41,8 +41,10 @@ pub fn load_dictionary(data: &[u8]) -> Result<JsValue, JsValue> {
     match dictionary_result {
         Ok(dictionary) => {
             let mut global_dict = GLOBAL_DICTIONARY.lock().unwrap();
-            *global_dict = Some(dictionary);
-            Ok(JsValue::TRUE) // Indicate success differently if needed
+            *global_dict = Some(dictionary.clone()); // Store a copy in the global variable if needed
+
+            // Serialize and return the loaded dictionary
+            to_value(&dictionary).map_err(|e| e.into())
         },
         Err(e) => Err(e.to_string().into()),
     }
@@ -112,6 +114,7 @@ fn acronymize_context(words: &[&str]) -> String {
 
 // Updating the process_input function to use these helpers
 fn process_input(input: &str) -> PredictiveTextContext {
+  web_sys::console::log_1(&input.into());
   let sanitized_input = sanitize_text(input);
   let words: Vec<&str> = sanitized_input.split_whitespace().collect();
 
@@ -256,6 +259,8 @@ fn filter_on_second_level_context(
 
 #[wasm_bindgen]
 pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
+    // web_sys::console::log_1(&input.into());
+
     // Process the input to split into sanitized anchor, first and second level contexts
     let processed_input = process_input(input);
 
@@ -290,6 +295,7 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
 // me back just the one best match at that key-level, because I'd want the second level filtering to just
 // jump down a key-level and do the same with the second level context and I'm not sure that's what it's doing.
 // 
+// (Below is done)
 // Maybe what would be useful is to get the msgpack to look right, without the score values and things we don't 
 // need in the final printing. Better yet, if we can make a miniature version of it, and the token dict that we
 // just use for testing. That way we can actually see where we are in the dict structure—which is super not clear
