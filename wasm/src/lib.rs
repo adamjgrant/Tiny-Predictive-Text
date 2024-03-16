@@ -197,54 +197,45 @@ fn match_x_level_context(
     }
 }
 
-fn filter_on_first_level_context(
+fn filter_on_x_level_context(
   processed_input: &PredictiveTextContext,
-  anchor_filtered_dictionary: &Node,
+  filtered_dictionary: &Node,
 ) -> (PredictiveTextContext, Option<Node>) {
   // Access the global inverted token dictionary to convert token IDs to strings
   let dict_lock = INVERTED_TOKEN_DICT.lock().unwrap();
 
-  if let Node::Map(_sub_map) = anchor_filtered_dictionary {
+  if let Node::Map(_sub_map) = filtered_dictionary {
       let first_level_context = &processed_input.first_level_context;
 
-      let first_level_context_filtered_node = match_x_level_context(
+      let context_filtered_node = match_x_level_context(
           first_level_context,
-          anchor_filtered_dictionary,
+          filtered_dictionary,
           &dict_lock // Pass reference directly without cloning
       );
-      web_sys::console::log_1(&to_value(&first_level_context_filtered_node).unwrap_or_else(|_| JsValue::UNDEFINED));
+      web_sys::console::log_1(&to_value(&context_filtered_node).unwrap_or_else(|_| JsValue::UNDEFINED));
 
       let updated_context = processed_input.clone(); // Clone processed_input to create a potentially updated context
-      (updated_context, first_level_context_filtered_node) // Return both the updated context and the node
+      (updated_context, context_filtered_node) // Return both the updated context and the node
   } else {
       // Return empty context if no anchor filtered dictionary is available
       (processed_input.clone(), None)
   }
 }
 
-fn filter_on_second_level_context(
-  processed_input: &PredictiveTextContext, 
-  first_level_context_filtered_dictionary: &Node
-) -> (PredictiveTextContext, Option<Node>) {
-  // Access the global inverted token dictionary to convert token IDs to strings
-  let dict_lock = INVERTED_TOKEN_DICT.lock().unwrap();
-
-  if let Node::Map(_sub_map) = first_level_context_filtered_dictionary {
-      let first_level_context = &processed_input.first_level_context;
-
-      let second_level_context_filtered_node = match_x_level_context(
-          first_level_context,
-          first_level_context_filtered_dictionary,
-          &dict_lock // Pass reference directly without cloning
-      );
-      web_sys::console::log_1(&to_value(&second_level_context_filtered_node).unwrap_or_else(|_| JsValue::UNDEFINED));
-
-      let updated_context = processed_input.clone(); // Clone processed_input to create a potentially updated context
-      (updated_context, second_level_context_filtered_node) // Return both the updated context and the node
-  } else {
-      // Return empty context if no anchor filtered dictionary is available
-      (processed_input.clone(), None)
-  }
+fn extract_predictions(input: &Node) -> (Vec<String>) {
+    // TODO here input is a map with one key and a value of an array with multiple arrays in it.
+    // e.g.
+    // {
+    //   2: [
+    //     [5,6,7], [8,9,10]
+    //   ]
+    // }
+    // First we need to isolate just the Vec<Vec<String>> like this
+    // [[5,6,7],[8,9,10]]
+    // Then we need to use the noninverted token dict to replace the integers with their actual string values.
+    // e.g. [["how","are","you"],["thank","you","sir"]]
+    // Then we join the subarrays with " " to transform them into strings instead and this is what we return.
+    // e.g. ["how are you", "thank you sir"]
 }
 
 #[wasm_bindgen]
@@ -259,11 +250,13 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
       // If we do have an anchor dictionary, proceed with further filtering
 
       // Filtering based on the first level context
-      let (updated_context_after_filtering_first_level_context, first_level_context_filtered_dictionary) = filter_on_first_level_context(&updated_context_after_filtering_anchor, &anchor_dict);
+      let (updated_context_after_filtering_first_level_context, first_level_context_filtered_dictionary) = filter_on_x_level_context(&updated_context_after_filtering_anchor, &anchor_dict);
 
       // Filtering based on the second level context, if there was a dictionary from the first level filtering
       if let Some(first_level_dict) = first_level_context_filtered_dictionary {
-          let (final_context, _second_level_context_filtered_dictionary) = filter_on_second_level_context(&updated_context_after_filtering_first_level_context, &first_level_dict);
+          let (final_context, _second_level_context_filtered_dictionary) = filter_on_x_level_context(&updated_context_after_filtering_first_level_context, &first_level_dict);
+
+          // TODO set the `predictions` key on final_context to the result of extract_predictions(_second_level_context_filtered_dictionary)
           
           // Return the final context after all filtering
           return to_value(&final_context).map_err(|e| e.into());
@@ -274,14 +267,3 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
   // return the processed_input or the latest context available
   to_value(&updated_context_after_filtering_anchor).map_err(|e| e.into())
 }
-
-// Where I left off:
-// I think filtering on the first level context works okay. I'm now wondering whether or not its giving
-// me back just the one best match at that key-level, because I'd want the second level filtering to just
-// jump down a key-level and do the same with the second level context and I'm not sure that's what it's doing.
-// 
-// (Below is done)
-// Maybe what would be useful is to get the msgpack to look right, without the score values and things we don't 
-// need in the final printing. Better yet, if we can make a miniature version of it, and the token dict that we
-// just use for testing. That way we can actually see where we are in the dict structure—which is super not clear
-// from debugging right now.
