@@ -171,8 +171,8 @@ fn filter_dictionary_on_anchor(processed_input: &PredictiveTextContext) -> (Pred
   (updated_context, filtered_data)
 }
 
-fn match_first_level_context(
-  first_level_context: &str,
+fn match_x_level_context(
+  x_level_context: &str,
   filtered_dict: &Node,
   dict_token_to_string: &HashMap<String, i32>,
 ) -> Option<Node> {
@@ -181,7 +181,7 @@ fn match_first_level_context(
 
         for (&key, value) in sub_map {
             if let Some(key_str) = dict_token_to_string.iter().find_map(|(s, &k)| if k == key { Some(s) } else { None }) {
-                let distance = levenshtein(first_level_context, key_str);
+                let distance = levenshtein(x_level_context, key_str);
 
                 match closest_match {
                     None => closest_match = Some((value, distance)),
@@ -204,14 +204,10 @@ fn filter_on_first_level_context(
   // Access the global inverted token dictionary to convert token IDs to strings
   let dict_lock = INVERTED_TOKEN_DICT.lock().unwrap();
 
-  web_sys::console::log_1(&"ping".into());
-
   if let Node::Map(_sub_map) = anchor_filtered_dictionary {
       let first_level_context = &processed_input.first_level_context;
 
-      web_sys::console::log_1(&"pong".into());
-      
-      let first_level_context_filtered_node = match_first_level_context(
+      let first_level_context_filtered_node = match_x_level_context(
           first_level_context,
           anchor_filtered_dictionary,
           &dict_lock // Pass reference directly without cloning
@@ -226,39 +222,29 @@ fn filter_on_first_level_context(
   }
 }
 
-fn match_second_level_context(
-  _second_level_context: &str, 
-  _key: &i32, 
-  _value: &Node,
-  _dict_token_to_string: &HashMap<String, i32>, // Assuming you need this based on the pattern
-) -> Option<Node> {
-  // Placeholder logic: Implement the actual matching logic here
-  // For demonstration, let's just return None
-  None
-}
-
 fn filter_on_second_level_context(
   processed_input: &PredictiveTextContext, 
   first_level_context_filtered_dictionary: &Node
 ) -> (PredictiveTextContext, Option<Node>) {
-  let second_level_context = &processed_input.second_level_context;
+  // Access the global inverted token dictionary to convert token IDs to strings
+  let dict_lock = INVERTED_TOKEN_DICT.lock().unwrap();
 
-  // Initialize as None, will be updated if a matching node is found
-  let mut second_level_context_filtered_node = None;
+  if let Node::Map(_sub_map) = first_level_context_filtered_dictionary {
+      let first_level_context = &processed_input.first_level_context;
 
-  if let Node::Map(flc_map) = first_level_context_filtered_dictionary {
-      let dict_lock = INVERTED_TOKEN_DICT.lock().unwrap();
+      let second_level_context_filtered_node = match_x_level_context(
+          first_level_context,
+          first_level_context_filtered_dictionary,
+          &dict_lock // Pass reference directly without cloning
+      );
+      web_sys::console::log_1(&to_value(&second_level_context_filtered_node).unwrap_or_else(|_| JsValue::UNDEFINED));
 
-      for (&key, value) in flc_map {
-          if let Some(matching_node) = match_second_level_context(second_level_context, &key, value, &dict_lock) {
-              second_level_context_filtered_node = Some(matching_node.clone());
-              break; // Exit loop early if a match is found
-          }
-      }
+      let updated_context = processed_input.clone(); // Clone processed_input to create a potentially updated context
+      (updated_context, second_level_context_filtered_node) // Return both the updated context and the node
+  } else {
+      // Return empty context if no anchor filtered dictionary is available
+      (processed_input.clone(), None)
   }
-
-  let updated_context = processed_input.clone();
-  (updated_context, second_level_context_filtered_node)
 }
 
 #[wasm_bindgen]
