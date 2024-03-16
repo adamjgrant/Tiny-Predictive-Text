@@ -5,7 +5,6 @@ use wasm_bindgen::prelude::*;
 use serde_wasm_bindgen::to_value;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
-use std::sync::MutexGuard;
 extern crate web_sys;
 use strsim::levenshtein;
 
@@ -114,7 +113,6 @@ fn acronymize_context(words: &[&str]) -> String {
 
 // Updating the process_input function to use these helpers
 fn process_input(input: &str) -> PredictiveTextContext {
-  web_sys::console::log_1(&input.into());
   let sanitized_input = sanitize_text(input);
   let words: Vec<&str> = sanitized_input.split_whitespace().collect();
 
@@ -122,10 +120,12 @@ fn process_input(input: &str) -> PredictiveTextContext {
   let inverted_dict_lock = INVERTED_TOKEN_DICT.lock().unwrap();
   let inverted_dict = &*inverted_dict_lock;
 
+
   let anchor_token = words.last()
     .and_then(|anchor| inverted_dict.get(&sanitize_text(anchor)))
     .cloned()
     .unwrap_or(-1); // This gets the ID associated with the anchor
+  
 
   // Ensure there's at least one word to use as anchor
   if let Some(anchor) = words.last() {
@@ -204,8 +204,12 @@ fn filter_on_first_level_context(
   // Access the global inverted token dictionary to convert token IDs to strings
   let dict_lock = INVERTED_TOKEN_DICT.lock().unwrap();
 
+  web_sys::console::log_1(&"ping".into());
+
   if let Node::Map(_sub_map) = anchor_filtered_dictionary {
       let first_level_context = &processed_input.first_level_context;
+
+      web_sys::console::log_1(&"pong".into());
       
       let first_level_context_filtered_node = match_first_level_context(
           first_level_context,
@@ -259,35 +263,30 @@ fn filter_on_second_level_context(
 
 #[wasm_bindgen]
 pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
-    // web_sys::console::log_1(&input.into());
+  let processed_input = process_input(input);
 
-    // Process the input to split into sanitized anchor, first and second level contexts
-    let processed_input = process_input(input);
+  // Filter on the anchor token
+  let (updated_context_after_filtering_anchor, anchor_filtered_dictionary) = filter_dictionary_on_anchor(&processed_input);
 
-    // At this point, you would filter the global dictionary based on the processed input
-    // This might involve several steps, such as:
-    // 1. Filtering on the anchor token (if your design includes this step)
-    let (updated_context_after_filtering_anchor, anchor_filtered_dictionary) = filter_dictionary_on_anchor(&processed_input);
+  // Check if a Node was returned; if not, return the processed_input as is
+  if let Some(anchor_dict) = anchor_filtered_dictionary {
+      // If we do have an anchor dictionary, proceed with further filtering
 
-    // 2. Filtering based on the first level context
-    let (updated_context_after_filtering_first_level_context, first_level_context_filtered_dictionary) = filter_on_first_level_context(&updated_context_after_filtering_anchor, anchor_filtered_dictionary.as_ref().unwrap());
+      // Filtering based on the first level context
+      let (updated_context_after_filtering_first_level_context, first_level_context_filtered_dictionary) = filter_on_first_level_context(&updated_context_after_filtering_anchor, &anchor_dict);
 
-    // let debug_info_1 = (updated_context_after_filtering_anchor, anchor_filtered_dictionary);
-    // return serde_wasm_bindgen::to_value(&debug_info_1).map_err(|e| e.into());
+      // Filtering based on the second level context, if there was a dictionary from the first level filtering
+      if let Some(first_level_dict) = first_level_context_filtered_dictionary {
+          let (final_context, _second_level_context_filtered_dictionary) = filter_on_second_level_context(&updated_context_after_filtering_first_level_context, &first_level_dict);
+          
+          // Return the final context after all filtering
+          return to_value(&final_context).map_err(|e| e.into());
+      }
+  }
 
-    // 3. Filtering based on the second level context
-    let (updated_context_after_filtering_second_level_context, second_level_context_filtered_dictionary) = filter_on_second_level_context(&updated_context_after_filtering_first_level_context, &first_level_context_filtered_dictionary.as_ref().unwrap());
-    // Debugging: Return early after filtering based on the first level context
-    // let debug_info_2 = (updated_context_after_filtering_first_level_context, first_level_context_filtered_dictionary);
-    // return serde_wasm_bindgen::to_value(&debug_info_2).map_err(|e| e.into());
-
-    // For demonstration, let's assume filter_on_first_level_context and filter_on_second_level_context
-    // are implemented to take processed_input and return something meaningful
-    // let first_level_filtered = filter_on_first_level_context(&processed_input, &GLOBAL_DICTIONARY);
-    // let second_level_filtered = filter_on_second_level_context(&first_level_filtered, &GLOBAL_DICTIONARY);
-
-    // For now, simply return the processed input as a JsValue
-    to_value(&updated_context_after_filtering_second_level_context).map_err(|e| e.into())
+  // If there was no anchor_filtered_dictionary or no first_level_context_filtered_dictionary,
+  // return the processed_input or the latest context available
+  to_value(&updated_context_after_filtering_anchor).map_err(|e| e.into())
 }
 
 // Where I left off:
