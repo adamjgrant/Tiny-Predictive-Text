@@ -91,16 +91,6 @@
     cs_layer3.innerHTML = suggestions.anchor
   }
 
-  Pace.on("done", () => {
-    Pace.track(async () => {
-      return new Promise((resolve, reject) => {
-        window.addEventListener('tinypredict-ready', () => {
-          resolve();
-        });
-      });
-    });
-  });
-
   window.addEventListener('tinypredict-ready', () => {
     document.body.classList.add('loaded');
 
