@@ -379,7 +379,7 @@ mod tests {
         dict_token_to_string.insert("banana".to_string(), 2);
 
         // A string that's a close match to "apple" but not an exact match
-        let x_level_context = "bpple";
+        let x_level_context = "pplea";
 
         // Call match_x_level_context
         let result = match_x_level_context(&x_level_context, &node, &dict_token_to_string);
