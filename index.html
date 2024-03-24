@@ -1,6 +1,11 @@
 <!DOCTYPE HTML>
-<link rel="stylesheet" href="style.css">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/pace-js@latest/pace.min.js"></script>
+    <!--link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pace-js@latest/pace-theme-default.min.css"-->
+    <link rel="stylesheet" href="loading-bar.css">
+    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+</head>
 <h2>Tiny Predictive Text
 <br><small>Experiment using a decaying context window</small></h2>
 <p>Press <strong>Tab</strong> to autocomplete with suggestion.<br>
@@ -85,6 +90,16 @@
     cs_layer2.innerHTML = suggestions.first_level_context;
     cs_layer3.innerHTML = suggestions.anchor
   }
+
+  Pace.on("done", () => {
+    Pace.track(async () => {
+      return new Promise((resolve, reject) => {
+        window.addEventListener('tinypredict-ready', () => {
+          resolve();
+        });
+      });
+    });
+  });
 
   window.addEventListener('tinypredict-ready', () => {
     document.body.classList.add('loaded');
