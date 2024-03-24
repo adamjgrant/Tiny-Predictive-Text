@@ -42,6 +42,16 @@
     set_suggestion_element();
   }
 
+  const cs_layer1 = document.getElementById('cs-layer1');
+  const cs_layer2 = document.getElementById('cs-layer2');
+  const cs_layer3 = document.getElementById('cs-layer3');
+  const cs_layer4 = document.getElementById('cs-layer4');
+  const set_debugger = (suggestions) => {
+    cs_layer2.innerHTML = suggestions.second_level_context;
+    cs_layer3.innerHTML = suggestions.first_level_context;
+    cs_layer4.innerHTML = suggestions.anchor
+  }
+
   window.addEventListener('tinypredict-ready', () => {
     const entry = document.getElementById('entry');
     entry.addEventListener("keydown", function(event) {
@@ -62,6 +72,7 @@
       else {
         window.getPredictiveText(input).then(suggestions => {
           console.log(suggestions.prediction); // Process or display the suggestions
+          set_debugger(suggestions);
           predictions_on_deck = suggestions.prediction;
           set_suggestion_element();
         });
@@ -69,3 +80,5 @@
     });
   });
 </script>
+
+<!-- Note to self, look at the debugger, it's not actually capturing the context letters correctly -->
