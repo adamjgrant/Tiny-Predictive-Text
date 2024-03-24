@@ -120,37 +120,50 @@ fn acronymize_context(words: &[&str]) -> String {
       .to_lowercase()
 }
 
-// Updating the process_input function to use these helpers
 fn process_input(input: &str) -> PredictiveTextContext {
   let sanitized_input = sanitize_text(input);
   let words: Vec<&str> = sanitized_input.split_whitespace().collect();
 
-  // This pattern is correct for accessing the inverted dictionary.
-  let inverted_dict_lock = INVERTED_TOKEN_DICT.lock().unwrap();
-  let inverted_dict = &*inverted_dict_lock;
-
-
   let anchor_token = words.last()
-    .and_then(|anchor| inverted_dict.get(&sanitize_text(anchor)))
-    .cloned()
-    .unwrap_or(-1); // This gets the ID associated with the anchor
-  
+      .map(|&anchor| INVERTED_TOKEN_DICT.lock().unwrap().get(&sanitize_text(anchor)).cloned().unwrap_or(-1))
+      .unwrap_or(-1); // This gets the ID associated with the anchor if present
 
   // Ensure there's at least one word to use as anchor
   if let Some(anchor) = words.last() {
-      // Compute first level context
-      let first_level_words = words.iter()
-                             .skip(words.len().saturating_sub(4))
-                             .take(3)
-                             .map(|&word| word) // Dereference each item
-                             .collect::<Vec<&str>>(); 
-
-      let first_level_context = acronymize_context(&first_level_words); // Ensure acronymize_context accepts a slice
+      // Compute first level context only if there are at least 4 words (3 + anchor)
+      let first_level_context = if words.len() >= 4 {
+          let start_index = if words.len() >= 4 { words.len() - 4 } else { 0 }; // Ensuring at least one word is skipped (the anchor)
+          let first_level_words = words.iter()
+                .skip(start_index)
+                .take(3)
+                .map(|&word| word) // Dereference each item
+                .collect::<Vec<&str>>();
+          acronymize_context(&first_level_words)
+      } else {
+          String::new()
+      };
 
       // Compute second level context
-      let second_level_start = words.len().saturating_sub(7).max(0);
-      let second_level_words = exclude_words(words.iter().skip(second_level_start).take(3).map(|&word| word).collect::<Vec<&str>>());
-      let second_level_context = acronymize_context(&second_level_words); // Ensure acronymize_context accepts a slice
+      let second_level_context = if words.len() > 3 { // Ensure there are words apart from the first level context
+        // Calculate the starting index for collecting potential second level context words, taking up to 20 words before the first level context
+        let max_lookback = words.len().saturating_sub(4).saturating_sub(20).max(0);
+        let potential_second_level_words = words.iter()
+            .skip(max_lookback)
+            .take(words.len() - 4) // Take all words up to the start of the first level context
+            .cloned()
+            .collect::<Vec<&str>>();
+
+        let filtered_second_level_words = exclude_words(potential_second_level_words)
+            .into_iter()
+            .rev() // Reverse to get the words closest to the first level context
+            .take(3) // Take the first three words after filtering and reversing
+            .collect::<Vec<&str>>();
+
+        // Since the words were reversed to prioritize those closest to the first level context, reverse again to maintain original order for acronym
+        acronymize_context(&filtered_second_level_words.iter().rev().cloned().collect::<Vec<&str>>())
+    } else {
+        String::new()
+    };
 
       PredictiveTextContext {
           anchor: anchor.to_string(),
