@@ -17,6 +17,15 @@ textarea {
   margin-bottom: 5px;
 }
 
+#suggestion.color-good { 
+  background: rgb(187, 246, 187); 
+  color: darkgreen;
+}
+#suggestion.color-better { background: #00cc00; }
+#suggestion.color-best { background: darkgreen; }
+#suggestion.color-idle { background: cornflowerblue; }
+#suggestion.color-inside_prediction { background: #EEEEEE; }
+
 #suggestion.two_word {
   background: teal;
 }

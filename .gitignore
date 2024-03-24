@@ -6,8 +6,8 @@ train.bak.txt
 dictionary.js
 dictionary.json
 tokens.json
-tokens.msgpack
-dictionary.msgpack
+# tokens.msgpack
+# dictionary.msgpack
 dictionary-fingerprint.js
 dictionary-anchors.js
 dictionary-properties.js

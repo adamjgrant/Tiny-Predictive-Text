@@ -29,25 +29,37 @@
 <script type="module" src="tinypredict.js"></script>
 <script>
   const suggestion_element = document.getElementById('suggestion');
-  const other_suggestions = document.getElementById('other-suggestions');
+  const other_suggestions_element = document.getElementById('other-suggestions');
+
+  set_suggestion_element_color = (object) => {
+    const ENUM = { GOOD: "good", BETTER: "better", BEST: "best", IDLE: "idle", INSIDE_PREDICTION: "inside_prediction" }
+    for (let key in ENUM) { let color = ENUM[key]; suggestion_element.classList.remove(`color-${color}`); }
+
+    let context_length = `${object.second_level_context}${object.first_level_context}`.length;
+    if (context_length === 6) color_to_use = ENUM.BEST;
+    else if (context_length > 3) color_to_use = ENUM.BETTER;
+    else if (context_length > 0) color_to_use = ENUM.GOOD;
+    else color_to_use = ENUM.IDLE;
+    suggestion_element.classList.add(`color-${color_to_use}`); 
+    console.log(object)
+  }
 
   const set_suggestion_element = () => {
-    other_suggestions.innerHTML = '';
+    other_suggestions_element.innerHTML = '';
 
-    if (predictions_on_deck.length === 0) {
+    if (predictions_on_deck.length === 0 || predictions_on_deck[0] === "") {
       suggestion_element.innerHTML = '...';
       return;
     }
     suggestion_element.innerHTML = predictions_on_deck[0];
-    /*
-    other_suggestions = predictions_on_deck.splice(1, predictions_on_deck.length - 1);
+    
+    let other_suggestions = predictions_on_deck.splice(1, predictions_on_deck.length - 1);
 
     other_suggestions.forEach(suggestion => {
       const secondary_suggestion = copy_from_template("secondary-suggestions");
       secondary_suggestion.innerHTML = suggestion;
-      other_suggestions.appendChild(secondary_suggestion);
+      other_suggestions_element.appendChild(secondary_suggestion);
     });
-    */
   }
 
   let predictions_on_deck = [];
@@ -95,14 +107,12 @@
       }
       else {
         window.getPredictiveText(input).then(suggestions => {
-          console.log(suggestions.prediction); // Process or display the suggestions
           set_debugger(suggestions);
           predictions_on_deck = suggestions.prediction;
           set_suggestion_element();
+          set_suggestion_element_color(suggestions);
         });
       }
     });
   });
 </script>
-
-<!-- Note to self, look at the debugger, it's not actually capturing the context letters correctly -->
