@@ -52,15 +52,19 @@
     });
     entry.addEventListener("keyup", function(event) {
       const input = event.target.value;
-      window.getPredictiveText(input).then(suggestions => {
-        console.log(suggestions.prediction); // Process or display the suggestions
-        predictions_on_deck = suggestions.prediction;
-        set_suggestion_element();
-      });
       if (event.key === "Shift") {
         event.preventDefault();
-        suggestions_on_deck.push(suggestions_on_deck.shift());
+        console.log(predictions_on_deck);
+        predictions_on_deck.push(predictions_on_deck.shift());
+        console.log(predictions_on_deck);
         set_suggestion_element();
+      }
+      else {
+        window.getPredictiveText(input).then(suggestions => {
+          console.log(suggestions.prediction); // Process or display the suggestions
+          predictions_on_deck = suggestions.prediction;
+          set_suggestion_element();
+        });
       }
     });
   });

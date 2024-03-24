@@ -236,7 +236,7 @@ fn extract_predictions(filtered_node: Option<Node>) -> Vec<String> {
 
   match filtered_node {
       Some(Node::List(list_of_lists)) => {
-          web_sys::console::log_1(&"Direct List of lists:".into());
+          // web_sys::console::log_1(&"Direct List of lists:".into());
           list_of_lists.iter().map(|list| {
               list.iter().map(|&id| {
                   let result = dict_lock.get(&id).cloned().unwrap_or_default();
