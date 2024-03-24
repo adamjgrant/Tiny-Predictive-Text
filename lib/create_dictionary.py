@@ -147,10 +147,11 @@ def save_to_dict_files(pruned_tree, token_dict):
 
 def save_test_dict_files():
   print("Creating test dict files")
+  # The quick brown fox wants to jump over the lazy anchor
   # dict_tree = {
   #   "anchor": {
-  #     "one": {
-  #       "two": [
+  #     "lto": {
+  #       "wj": [
   #         ["I", "love", "you"], ["how's", "it", "hanging?"]
   #       ]
   #     }
@@ -167,8 +168,8 @@ def save_test_dict_files():
   }
   token_dict = {
     0: "anchor",
-    1: "one",
-    2: "two",
+    1: "lto",
+    2: "wj",
     3: "I",
     4: "love",
     5: "you",

@@ -81,7 +81,7 @@ struct PredictiveTextContext {
     anchor_token: i32,
     first_level_context: String,
     second_level_context: String,
-    prediction: String,
+    prediction: Vec<String>,
 }
 
 // Placeholder function to sanitize text (removing punctuation, making lowercase)
@@ -143,7 +143,7 @@ fn process_input(input: &str) -> PredictiveTextContext {
           anchor_token,
           first_level_context,
           second_level_context,
-          prediction: String::new(), // Empty initially, to be filled later
+          prediction: Vec::<String>::new(), // Empty initially, to be filled later
       }
   } else {
       // Return empty context if input is not sufficient
@@ -152,7 +152,7 @@ fn process_input(input: &str) -> PredictiveTextContext {
           anchor_token: -1,
           first_level_context: String::new(),
           second_level_context: String::new(),
-          prediction: String::new(),
+          prediction: Vec::<String>::new(),
       }
   }
 }
@@ -222,21 +222,28 @@ fn filter_on_x_level_context(
   }
 }
 
-fn extract_predictions(input: &Node) -> (Vec<String>) {
-    // TODO here input is a map with one key and a value of an array with multiple arrays in it.
-    // e.g.
-    // {
-    //   2: [
-    //     [5,6,7], [8,9,10]
-    //   ]
-    // }
-    // First we need to isolate just the Vec<Vec<String>> like this
-    // [[5,6,7],[8,9,10]]
-    // Then we need to use the noninverted token dict to replace the integers with their actual string values.
-    // e.g. [["how","are","you"],["thank","you","sir"]]
-    // Then we join the subarrays with " " to transform them into strings instead and this is what we return.
-    // e.g. ["how are you", "thank you sir"]
+fn extract_predictions(filtered_node: Option<Node>) -> Vec<String> {
+  let dict_lock = INVERTED_TOKEN_DICT.lock().unwrap(); // Access the inverted token dictionary
+
+  match filtered_node {
+      Some(Node::Map(sub_map)) => sub_map.iter().flat_map(|(_key, node)| {
+          match node {
+              Node::List(list_of_lists) => list_of_lists.iter().map(|list| {
+                  list.iter().map(|&id| {
+                      // Convert each integer ID to its string representation
+                      dict_lock.iter()
+                          .find_map(|(string, &i)| if i == id { Some(string.as_str()) } else { None })
+                          .unwrap_or_default()
+                  }).collect::<Vec<&str>>().join(" ")
+              }).collect::<Vec<String>>(),
+              // Handle other `Node` variants if necessary
+              _ => vec![],
+          }
+      }).collect(),
+      _ => vec![], // Return an empty vector if `filtered_node` is None or does not match expected structure
+  }
 }
+
 
 #[wasm_bindgen]
 pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
@@ -254,16 +261,19 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
 
       // Filtering based on the second level context, if there was a dictionary from the first level filtering
       if let Some(first_level_dict) = first_level_context_filtered_dictionary {
-          let (final_context, _second_level_context_filtered_dictionary) = filter_on_x_level_context(&updated_context_after_filtering_first_level_context, &first_level_dict);
+          let (mut final_context, second_level_context_filtered_dictionary) = filter_on_x_level_context(&updated_context_after_filtering_first_level_context, &first_level_dict);
 
-          // TODO set the `predictions` key on final_context to the result of extract_predictions(_second_level_context_filtered_dictionary)
+          // Extract predictions
+          let predictions = extract_predictions(second_level_context_filtered_dictionary);
           
-          // Return the final context after all filtering
+          // Set the predictions key on final_context to `predictions`
+          final_context.prediction = predictions; // Assigning the predictions directly to the `prediction` field
+
+          // Serialize and return the final context after all filtering
           return to_value(&final_context).map_err(|e| e.into());
       }
   }
 
-  // If there was no anchor_filtered_dictionary or no first_level_context_filtered_dictionary,
-  // return the processed_input or the latest context available
+  // Fallback: Serialize and return the initial or latest context available
   to_value(&updated_context_after_filtering_anchor).map_err(|e| e.into())
 }
