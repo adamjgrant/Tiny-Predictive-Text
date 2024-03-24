@@ -139,7 +139,12 @@ fn process_input(input: &str) -> PredictiveTextContext {
   // Ensure there's at least one word to use as anchor
   if let Some(anchor) = words.last() {
       // Compute first level context
-      let first_level_words = words.iter().rev().skip(1).take(3).map(|&word| word).collect::<Vec<&str>>();
+      let first_level_words = words.iter()
+                             .skip(words.len().saturating_sub(4))
+                             .take(3)
+                             .map(|&word| word) // Dereference each item
+                             .collect::<Vec<&str>>(); 
+
       let first_level_context = acronymize_context(&first_level_words); // Ensure acronymize_context accepts a slice
 
       // Compute second level context
