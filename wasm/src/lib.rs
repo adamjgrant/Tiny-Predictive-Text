@@ -252,6 +252,9 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
   // Filter on the anchor token
   let (updated_context_after_filtering_anchor, anchor_filtered_dictionary) = filter_dictionary_on_anchor(&processed_input);
 
+  //web_sys::console::log_1(&"Anchor filtered dictionary:".into());
+  //web_sys::console::log_1(&to_value(&anchor_filtered_dictionary).unwrap_or(JsValue::UNDEFINED));
+
   // Check if a Node was returned; if not, return the processed_input as is
   if let Some(anchor_dict) = anchor_filtered_dictionary {
       // If we do have an anchor dictionary, proceed with further filtering
@@ -262,6 +265,12 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
       // Filtering based on the second level context, if there was a dictionary from the first level filtering
       if let Some(first_level_dict) = first_level_context_filtered_dictionary {
           let (mut final_context, second_level_context_filtered_dictionary) = filter_on_x_level_context(&updated_context_after_filtering_first_level_context, &first_level_dict);
+
+          // Log the second level context filtered dictionary
+          web_sys::console::log_1(&"Second level context filtered dictionary:".into());
+          web_sys::console::log_1(&to_value(&second_level_context_filtered_dictionary).unwrap_or_else(|_| JsValue::UNDEFINED));
+          // TODO: This is [[3, 4, 5], [6, 7, 8]] so predictions should not end up being [] below.
+          // That's where the problem is, in extract predictions. Somehow not working right.
 
           // Extract predictions
           let predictions = extract_predictions(second_level_context_filtered_dictionary);
