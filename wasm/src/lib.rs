@@ -54,23 +54,32 @@ pub fn load_tokens(data: &[u8]) -> Result<JsValue, JsValue> {
     let tokens_result: Result<HashMap<i32, String>, _> = from_slice(data);
     match tokens_result {
         Ok(tokens) => {
+            // The original tokens HashMap is the non-inverted dictionary
+            let non_inverted_dict = tokens.clone(); // Clone it to keep ownership for further use
+
             // Invert the dictionary: Map from String -> i32
             let inverted_dict: HashMap<String, i32> = tokens.into_iter().map(|(key, val)| (val, key)).collect();
 
-            // Store the inverted dictionary for later use
-            let mut global_dict = INVERTED_TOKEN_DICT.lock().unwrap(); // Lock the mutex around the global dictionary
-            *global_dict = inverted_dict; // Replace the contents with the new inverted dictionary
+            // Store the non-inverted dictionary for later use
+            let mut token_dict_lock = TOKEN_DICT.lock().unwrap(); // Lock the mutex around the global token dictionary
+            *token_dict_lock = non_inverted_dict.clone(); // Replace the contents with the new non-inverted dictionary
 
-            // Returning the inverted dictionary for demonstration; adjust as needed
-            to_value(&*global_dict).map_err(|e| e.into())
+            // Store the inverted dictionary for later use
+            let mut global_inverted_dict = INVERTED_TOKEN_DICT.lock().unwrap(); // Lock the mutex around the global inverted dictionary
+            *global_inverted_dict = inverted_dict; // Replace the contents with the new inverted dictionary
+
+            // Serialize and return the non-inverted dictionary to JavaScript
+            to_value(&non_inverted_dict).map_err(|e| e.into())
         },
         Err(e) => Err(e.to_string().into()),
     }
 }
 
+
 type Dictionary = HashMap<i32, Node>;
 
 lazy_static! {
+    static ref TOKEN_DICT: Mutex<HashMap<i32, String>> = Mutex::new(HashMap::new());
     static ref INVERTED_TOKEN_DICT: Mutex<HashMap<String, i32>> = Mutex::new(HashMap::new());
     static ref GLOBAL_DICTIONARY: Mutex<Option<Dictionary>> = Mutex::new(None);
 }
@@ -212,7 +221,7 @@ fn filter_on_x_level_context(
           filtered_dictionary,
           &dict_lock // Pass reference directly without cloning
       );
-      web_sys::console::log_1(&to_value(&context_filtered_node).unwrap_or_else(|_| JsValue::UNDEFINED));
+      // web_sys::console::log_1(&to_value(&context_filtered_node).unwrap_or_else(|_| JsValue::UNDEFINED));
 
       let updated_context = processed_input.clone(); // Clone processed_input to create a potentially updated context
       (updated_context, context_filtered_node) // Return both the updated context and the node
@@ -223,24 +232,38 @@ fn filter_on_x_level_context(
 }
 
 fn extract_predictions(filtered_node: Option<Node>) -> Vec<String> {
-  let dict_lock = INVERTED_TOKEN_DICT.lock().unwrap(); // Access the inverted token dictionary
+  let dict_lock = TOKEN_DICT.lock().unwrap(); // Access the token dictionary
+
+  web_sys::console::log_1(&"Extracting predictions...".into());
+  web_sys::console::log_1(&serde_wasm_bindgen::to_value(&filtered_node).unwrap_or(JsValue::UNDEFINED));
 
   match filtered_node {
+      Some(Node::List(list_of_lists)) => {
+          web_sys::console::log_1(&"Direct List of lists:".into());
+          list_of_lists.iter().map(|list| {
+              list.iter().map(|&id| {
+                  let result = dict_lock.get(&id).cloned().unwrap_or_default();
+                  // Optionally log each ID and its corresponding string
+                  // web_sys::console::log_1(&format!("ID: {}, String: {}", id, result).into());
+                  result
+              }).collect::<Vec<String>>().join(" ")
+          }).collect::<Vec<String>>()
+      },
       Some(Node::Map(sub_map)) => sub_map.iter().flat_map(|(_key, node)| {
           match node {
-              Node::List(list_of_lists) => list_of_lists.iter().map(|list| {
-                  list.iter().map(|&id| {
-                      // Convert each integer ID to its string representation
-                      dict_lock.iter()
-                          .find_map(|(string, &i)| if i == id { Some(string.as_str()) } else { None })
-                          .unwrap_or_default()
-                  }).collect::<Vec<&str>>().join(" ")
-              }).collect::<Vec<String>>(),
-              // Handle other `Node` variants if necessary
+              Node::List(list_of_lists) => {
+                  web_sys::console::log_1(&"Nested List of lists in Map:".into());
+                  list_of_lists.iter().map(|list| {
+                      list.iter().map(|&id| {
+                          let result = dict_lock.get(&id).cloned().unwrap_or_default();
+                          result
+                      }).collect::<Vec<String>>().join(" ")
+                  }).collect::<Vec<String>>()
+              },
               _ => vec![],
           }
       }).collect(),
-      _ => vec![], // Return an empty vector if `filtered_node` is None or does not match expected structure
+      _ => vec![],
   }
 }
 
@@ -274,6 +297,9 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
 
           // Extract predictions
           let predictions = extract_predictions(second_level_context_filtered_dictionary);
+
+          web_sys::console::log_1(&"Predictions:".into());
+          web_sys::console::log_1(&to_value(&predictions).unwrap_or_else(|_| JsValue::UNDEFINED));
           
           // Set the predictions key on final_context to `predictions`
           final_context.prediction = predictions; // Assigning the predictions directly to the `prediction` field
