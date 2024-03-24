@@ -31,3 +31,30 @@ textarea {
   height: 14px;
   width: 14px;
 }
+
+.loading {
+  font-style: italic;
+}
+
+.loaded .loading {
+  opacity: 0;
+}
+
+.entry {
+  background: darkgrey
+}
+
+.loaded .entry {
+  background: white;
+}
+
+.other-suggestions {
+  display: inline-block;
+}
+
+.secondary-suggestion {
+  padding: 3px 5px;
+  background: #EEE;
+  border-radius: 5px;
+  margin-right: 5px;
+}

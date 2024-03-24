@@ -360,7 +360,7 @@ mod tests {
         // Assuming the desired first level context is computed from the last three words,
         // and it should be "bco" based on the acronym function you have.
         // This assertion checks if the first level context is as expected.
-        assert_eq!(context.first_level_context, "", "The second level context did not match the expected value.");
+        assert_eq!(context.first_level_context, "", "The first level context did not match the expected value.");
         assert_eq!(context.second_level_context, "", "The second level context did not match the expected value.");
     }
 }
