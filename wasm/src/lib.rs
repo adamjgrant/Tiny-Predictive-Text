@@ -234,9 +234,6 @@ fn filter_on_x_level_context(
 fn extract_predictions(filtered_node: Option<Node>) -> Vec<String> {
   let dict_lock = TOKEN_DICT.lock().unwrap(); // Access the token dictionary
 
-  web_sys::console::log_1(&"Extracting predictions...".into());
-  web_sys::console::log_1(&serde_wasm_bindgen::to_value(&filtered_node).unwrap_or(JsValue::UNDEFINED));
-
   match filtered_node {
       Some(Node::List(list_of_lists)) => {
           web_sys::console::log_1(&"Direct List of lists:".into());
