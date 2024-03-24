@@ -76,10 +76,16 @@ npm install
 Create webpack
 
 ```
+make
+```
+
+Or
+
+```
 npx webpack
 ```
 
-### Usage
+and
 
 ```bash
 wasm-pack build --target web wasm
