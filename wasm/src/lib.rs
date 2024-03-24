@@ -130,14 +130,17 @@ fn process_input(input: &str) -> PredictiveTextContext {
 
   if let Some(anchor) = words.last() {
       // Compute first level context if there are 2 or more words (1 or more + anchor)
-      let first_level_context = if words.len() >= 2 {
-          let first_level_words = words.iter()
-              .take(words.len() - 1) // Exclude the anchor from the context
-              .cloned() // Correctly clone each &str reference
-              .collect::<Vec<&str>>(); // Collect the words directly
-          acronymize_context(&first_level_words)
-      } else {
-          String::new()
+      let first_level_context = {
+          let significant_words = words.iter()
+              .rev() // Reverse to prioritize last words
+              .skip(1) // Skip the anchor
+              .take(3) // Take up to last three significant words
+              .cloned() // Clone the &str references
+              .collect::<Vec<&str>>() // Collect words
+              .into_iter()
+              .rev() // Reverse back to original order for acronym
+              .collect::<Vec<&str>>();
+          acronymize_context(&significant_words)
       };
     
 
@@ -350,14 +353,14 @@ mod tests {
 
     #[test]
     fn test_first_level_long_context() {
-        let input = "but if you think you need";
+        let input = "sweater if you think you need";
         let context = process_input(input);
 
         // Assuming the desired first level context is computed from the last three words,
         // and it should be "bco" based on the acronym function you have.
         // This assertion checks if the first level context is as expected.
         assert_eq!(context.first_level_context, "yty", "The first level context did not match the expected value.");
-        assert_eq!(context.second_level_context, "b", "The second level context did not match the expected value.");
+        assert_eq!(context.second_level_context, "s", "The second level context did not match the expected value.");
     }
 
     #[test]
