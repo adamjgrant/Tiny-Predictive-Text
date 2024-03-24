@@ -47,7 +47,7 @@
   const set_suggestion_element = () => {
     other_suggestions_element.innerHTML = '';
 
-    if (predictions_on_deck.length === 0 || predictions_on_deck[0] === "") {
+    if (predictions_on_deck.length === 0 || predictions_on_deck[0] === "" || predictions_on_deck[0] === undefined) {
       suggestion_element.innerHTML = '...';
       return;
     }
@@ -97,7 +97,8 @@
       }
     });
     entry.addEventListener("keyup", function(event) {
-      const input = event.target.value;
+      punctuation_regex = /[.\?&\*;:{}=\-_`~()]+/g;
+      const input = event.target.value.split(punctuation_regex).pop().trim();
       if (event.key === "Shift") {
         event.preventDefault();
         console.log(predictions_on_deck);
