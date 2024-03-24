@@ -64,6 +64,11 @@
       secondary_suggestion.innerHTML = suggestion;
       other_suggestions_element.appendChild(secondary_suggestion);
     });
+
+    const suggestion_element_as_span = document.createElement('span');
+    suggestion_element_as_span.innerHTML = predictions_on_deck[0];
+
+    entry.appendChild(suggestion_element_as_span);
   }
 
   let predictions_on_deck = [];
