@@ -16,7 +16,6 @@ async function run() {
     window.getPredictiveText = async function(inputText) {
       try {
           const suggestions = await get_predictive_text(inputText);
-          console.log("Predictive text suggestions:", suggestions);
           return suggestions;
       } catch (error) {
           console.error("Error getting predictive text:", error);
