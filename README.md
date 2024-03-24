@@ -67,6 +67,18 @@ Install wasm-pack
 cargo install wasm-pack
 ```
 
+Install npm dependencies
+
+```
+npm install
+```
+
+Create webpack
+
+```
+npx webpack
+```
+
 ### Usage
 
 ```bash

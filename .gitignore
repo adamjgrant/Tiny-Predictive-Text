@@ -13,3 +13,4 @@ dictionary-anchors.js
 dictionary-properties.js
 .DS_Store
 __pycache__
+node_modules
