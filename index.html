@@ -53,10 +53,10 @@
     }
     suggestion_element.innerHTML = predictions_on_deck[0];
     
-    let other_suggestions = predictions_on_deck.splice(1, predictions_on_deck.length - 1);
+    let other_suggestions = predictions_on_deck.slice(1, predictions_on_deck.length);
 
     other_suggestions.forEach(suggestion => {
-      const secondary_suggestion = copy_from_template("secondary-suggestions");
+      let secondary_suggestion = copy_from_template("secondary-suggestions");
       secondary_suggestion.innerHTML = suggestion;
       other_suggestions_element.appendChild(secondary_suggestion);
     });
