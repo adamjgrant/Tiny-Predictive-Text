@@ -4,16 +4,14 @@ async function run() {
     await init();
 
     // Fetch and load the dictionary.msgpack
-    const dictionaryResponse = await fetch('./dictionary-test.msgpack');
+    const dictionaryResponse = await fetch('./dictionary.msgpack');
     const dictionaryBuffer = await dictionaryResponse.arrayBuffer();
-    const dictionary = load_dictionary(new Uint8Array(dictionaryBuffer));
-    console.log(dictionary);
+    load_dictionary(new Uint8Array(dictionaryBuffer));
 
     // Similarly for tokens.msgpack
-    const tokensResponse = await fetch('./tokens-test.msgpack');
+    const tokensResponse = await fetch('./tokens.msgpack');
     const tokensBuffer = await tokensResponse.arrayBuffer();
-    const tokens = load_tokens(new Uint8Array(tokensBuffer));
-    console.log(tokens);
+    load_tokens(new Uint8Array(tokensBuffer));
 
     window.getPredictiveText = async function(inputText) {
       try {

@@ -249,7 +249,7 @@ fn extract_predictions(filtered_node: Option<Node>) -> Vec<String> {
       Some(Node::Map(sub_map)) => sub_map.iter().flat_map(|(_key, node)| {
           match node {
               Node::List(list_of_lists) => {
-                  web_sys::console::log_1(&"Nested List of lists in Map:".into());
+                  // web_sys::console::log_1(&"Nested List of lists in Map:".into());
                   list_of_lists.iter().map(|list| {
                       list.iter().map(|&id| {
                           let result = dict_lock.get(&id).cloned().unwrap_or_default();
@@ -287,16 +287,14 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
           let (mut final_context, second_level_context_filtered_dictionary) = filter_on_x_level_context(&updated_context_after_filtering_first_level_context, &first_level_dict);
 
           // Log the second level context filtered dictionary
-          web_sys::console::log_1(&"Second level context filtered dictionary:".into());
-          web_sys::console::log_1(&to_value(&second_level_context_filtered_dictionary).unwrap_or_else(|_| JsValue::UNDEFINED));
-          // TODO: This is [[3, 4, 5], [6, 7, 8]] so predictions should not end up being [] below.
-          // That's where the problem is, in extract predictions. Somehow not working right.
+          // web_sys::console::log_1(&"Second level context filtered dictionary:".into());
+          // web_sys::console::log_1(&to_value(&second_level_context_filtered_dictionary).unwrap_or_else(|_| JsValue::UNDEFINED));
 
           // Extract predictions
           let predictions = extract_predictions(second_level_context_filtered_dictionary);
 
-          web_sys::console::log_1(&"Predictions:".into());
-          web_sys::console::log_1(&to_value(&predictions).unwrap_or_else(|_| JsValue::UNDEFINED));
+          // web_sys::console::log_1(&"Predictions:".into());
+          // web_sys::console::log_1(&to_value(&predictions).unwrap_or_else(|_| JsValue::UNDEFINED));
           
           // Set the predictions key on final_context to `predictions`
           final_context.prediction = predictions; // Assigning the predictions directly to the `prediction` field
