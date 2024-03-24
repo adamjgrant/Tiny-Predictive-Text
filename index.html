@@ -21,9 +21,47 @@
 </p>
 <script type="module" src="tinypredict.js"></script>
 <script>
+  const suggestion_element = document.getElementById('suggestion');
+  const set_suggestion_element = () => {
+    if (predictions_on_deck.length === 0) {
+      suggestion_element.innerHTML = '...';
+      return;
+    }
+    suggestion_element.innerHTML = predictions_on_deck[0];
+  }
+
+  let predictions_on_deck = [];
+
+  const completeSuggestion = () => {
+    if (predictions_on_deck.length === 0) {
+      return;
+    }
+    const entry = document.getElementById('entry');
+    entry.value += predictions_on_deck[0] + " ";
+    predictions_on_deck = [];
+    set_suggestion_element();
+  }
+
   window.addEventListener('tinypredict-ready', () => {
-    window.getPredictiveText("The quick brown fox wants to jump over the lazy anchor").then(suggestions => {
-      console.log(suggestions); // Process or display the suggestions
+    const entry = document.getElementById('entry');
+    entry.addEventListener("keydown", function(event) {
+      if (event.key === "Tab") {
+        event.preventDefault();
+        completeSuggestion();
+      }
+    });
+    entry.addEventListener("keyup", function(event) {
+      const input = event.target.value;
+      window.getPredictiveText(input).then(suggestions => {
+        console.log(suggestions.prediction); // Process or display the suggestions
+        predictions_on_deck = suggestions.prediction;
+        set_suggestion_element();
+      });
+      if (event.key === "Shift") {
+        event.preventDefault();
+        suggestions_on_deck.push(suggestions_on_deck.shift());
+        set_suggestion_element();
+      }
     });
   });
 </script>
