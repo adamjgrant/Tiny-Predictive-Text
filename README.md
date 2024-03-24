@@ -73,3 +73,10 @@ cargo install wasm-pack
 wasm-pack build --target web wasm
 ```
 
+# Testing
+
+Test the Rust code with:
+`cargo test --manifest-path wasm/Cargo.toml`
+
+Test the python code with:
+`python -m unittest test.py`

@@ -9,7 +9,7 @@
  
 <textarea id="entry" placeholder="Start typing"></textarea>
 <p>
-  <br>Context string: <code><span id="cs-layer1">...</span> --> <span id="cs-layer2">...</span> --> <span id="cs-layer3">...</span> --> <span id="cs-layer4">...</span></code>
+  <br>Context string: <code><span id="cs-layer1">...</span> --> <span id="cs-layer2">...</span> --> <span id="cs-layer3">...</span></code>
 </p>
 
 <p>
@@ -45,11 +45,10 @@
   const cs_layer1 = document.getElementById('cs-layer1');
   const cs_layer2 = document.getElementById('cs-layer2');
   const cs_layer3 = document.getElementById('cs-layer3');
-  const cs_layer4 = document.getElementById('cs-layer4');
   const set_debugger = (suggestions) => {
-    cs_layer2.innerHTML = suggestions.second_level_context;
-    cs_layer3.innerHTML = suggestions.first_level_context;
-    cs_layer4.innerHTML = suggestions.anchor
+    cs_layer1.innerHTML = suggestions.second_level_context;
+    cs_layer2.innerHTML = suggestions.first_level_context;
+    cs_layer3.innerHTML = suggestions.anchor
   }
 
   window.addEventListener('tinypredict-ready', () => {

@@ -307,3 +307,30 @@ pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
   // Fallback: Serialize and return the initial or latest context available
   to_value(&updated_context_after_filtering_anchor).map_err(|e| e.into())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_first_level_context() {
+        let input = "Apple banana carrot orange";
+        let context = process_input(input);
+
+        // Assuming the desired first level context is computed from the last three words,
+        // and it should be "bco" based on the acronym function you have.
+        // This assertion checks if the first level context is as expected.
+        assert_eq!(context.first_level_context, "abc", "The first level context did not match the expected value.");
+    }
+
+    #[test]
+    fn test_second_level_context() {
+        let input = "Xylophone Yacht is Zebra Apple banana carrot orange";
+        let context = process_input(input);
+
+        // Assuming the desired first level context is computed from the last three words,
+        // and it should be "bco" based on the acronym function you have.
+        // This assertion checks if the first level context is as expected.
+        assert_eq!(context.second_level_context, "xyz", "The second level context did not match the expected value.");
+    }
+}
