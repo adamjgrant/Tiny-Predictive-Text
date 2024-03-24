@@ -46,7 +46,6 @@
     else if (context_length > 0) color_to_use = ENUM.GOOD;
     else color_to_use = ENUM.IDLE;
     suggestion_element.classList.add(`color-${color_to_use}`); 
-    console.log(object)
   }
 
   const set_suggestion_element = () => {
@@ -74,7 +73,8 @@
       return;
     }
     const entry = document.getElementById('entry');
-    entry.value += predictions_on_deck[0] + " ";
+    const space = entry.value.endsWith(" ") ? "" : " ";
+    entry.value += space + predictions_on_deck[0] + " ";
     predictions_on_deck = [];
     set_suggestion_element();
   }
@@ -106,9 +106,7 @@
       const input = event.target.value.split(punctuation_regex).pop().trim();
       if (event.key === "Shift") {
         event.preventDefault();
-        console.log(predictions_on_deck);
         predictions_on_deck.push(predictions_on_deck.shift());
-        console.log(predictions_on_deck);
         set_suggestion_element();
       }
       else {
