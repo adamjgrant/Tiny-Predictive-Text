@@ -349,6 +349,17 @@ mod tests {
     }
 
     #[test]
+    fn test_first_level_long_context() {
+        let input = "but if you think you need";
+        let context = process_input(input);
+
+        // Assuming the desired first level context is computed from the last three words,
+        // and it should be "bco" based on the acronym function you have.
+        // This assertion checks if the first level context is as expected.
+        assert_eq!(context.first_level_context, "yty", "The first level context did not match the expected value.");
+    }
+
+    #[test]
     fn test_second_level_context() {
         let input = "Xylophone Yacht is Zebra Apple banana carrot orange";
         let context = process_input(input);
