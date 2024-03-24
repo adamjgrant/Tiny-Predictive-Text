@@ -10,6 +10,7 @@ from lib.process_context_words import main as process_context_words
 from lib.finish_filing import main as finish_filing
 from lib.create_dictionary import create_dictionary_and_tokenize
 import asyncio
+import gc
 
 ###########
 # RECIPES #
@@ -154,6 +155,7 @@ def main():
               # Every now and then, prune unpopular entries based on chunks processed
               if chunks_processed_since_prune >= PRUNE_FREQUENCY:
                 asyncio.run(save())
+                gc.collect()
 
 
   create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)

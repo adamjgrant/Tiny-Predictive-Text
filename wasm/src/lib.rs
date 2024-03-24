@@ -363,4 +363,31 @@ mod tests {
         assert_eq!(context.first_level_context, "", "The first level context did not match the expected value.");
         assert_eq!(context.second_level_context, "", "The second level context did not match the expected value.");
     }
+
+    #[test]
+    fn test_close_match_x_level_context() {
+        // Setup a simple Node::Map with a few keys
+        let mut filtered_dict = HashMap::new();
+        filtered_dict.insert(1, Node::Value(10));
+        filtered_dict.insert(2, Node::Value(20));
+        let node = Node::Map(filtered_dict);
+
+        // Setup a dict_token_to_string mapping IDs to words
+        // Assume "apple" is ID 1 and "banana" is ID 2
+        let mut dict_token_to_string = HashMap::new();
+        dict_token_to_string.insert("apple".to_string(), 1);
+        dict_token_to_string.insert("banana".to_string(), 2);
+
+        // A string that's a close match to "apple" but not an exact match
+        let x_level_context = "bpple";
+
+        // Call match_x_level_context
+        let result = match_x_level_context(&x_level_context, &node, &dict_token_to_string);
+
+        // Assert the expected Node is returned, indicating a match with "apple"
+        match result {
+            Some(Node::Value(val)) => assert_eq!(val, 10, "The function did not match the closest key correctly."),
+            _ => panic!("The function did not return the expected Node type."),
+        }
+    }
 }
