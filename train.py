@@ -22,7 +22,7 @@ import asyncio
 
 PRUNE_FREQUENCY = 4 * 1000 # Every this many chunks
 CHUNK_SIZE = 1024 # 1KB per chunk
-TARGET_DICTIONARY_COUNT = 10 * 1000
+TARGET_DICTIONARY_COUNT = 9 * 1000
 
 # Define a flag to indicate when an interrupt has been caught
 interrupted = False
