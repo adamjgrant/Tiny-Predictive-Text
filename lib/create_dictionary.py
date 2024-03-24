@@ -206,4 +206,6 @@ async def create_dictionary_and_tokenize(tree_store, target_dict_size):
 
     # Save files for testing with wasm and stuff.
     save_test_dict_files()
+
+    print("Finished creating dictionary and tokenization")
     return

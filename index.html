@@ -19,7 +19,7 @@
 
 <div id="other-suggestions" class="other-suggestions"></div>
  
-<textarea id="entry" class="entry" placeholder="Start typing"></textarea>
+<div id="entry" class="entry" contenteditable="true" placeholder="Start typing"></div>
 <p>
   <br>Context string: <code><span id="cs-layer1">...</span> --> <span id="cs-layer2">...</span> --> <span id="cs-layer3">...</span></code>
 </p>
@@ -73,10 +73,11 @@
       return;
     }
     const entry = document.getElementById('entry');
-    const space = entry.value.endsWith(" ") ? "" : " ";
-    entry.value += space + predictions_on_deck[0] + " ";
+    const space = entry.innerText.endsWith(" ") ? "" : " ";
+    entry.innerText += space + predictions_on_deck[0].trim() + " ";
     predictions_on_deck = [];
     set_suggestion_element();
+    moveCursorToEnd(entry);
   }
 
   // Copy <templates> by ID.
@@ -91,6 +92,26 @@
     cs_layer3.innerHTML = suggestions.anchor
   }
 
+  function moveCursorToEnd(contentEditableElement) {
+      // Ensure the element is focusable
+      contentEditableElement.focus();
+      
+      // Create a range object
+      var range = document.createRange();
+      var selection = window.getSelection();
+      
+      // Set the range to the end of the content
+      range.selectNodeContents(contentEditableElement);
+      range.collapse(false); // false collapses the range to its end
+      
+      // Remove any existing selections
+      selection.removeAllRanges();
+      
+      // Add the new range
+      selection.addRange(range);
+  }
+
+
   window.addEventListener('tinypredict-ready', () => {
     document.body.classList.add('loaded');
 
@@ -103,7 +124,7 @@
     });
     entry.addEventListener("keyup", function(event) {
       punctuation_regex = /[.\?&\*;:{}=\-_`~()]+/g;
-      const input = event.target.value.split(punctuation_regex).pop().trim();
+      const input = event.target.innerText.split(punctuation_regex).pop().trim();
       if (event.key === "Shift") {
         event.preventDefault();
         predictions_on_deck.push(predictions_on_deck.shift());

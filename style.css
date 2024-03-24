@@ -50,7 +50,11 @@ textarea {
 }
 
 .entry {
-  background: darkgrey
+  background: darkgrey;
+  max-width: 600px;
+  border: 1px solid #CCC;
+  padding: 15px;
+  min-height: 350px;
 }
 
 .loaded .entry {

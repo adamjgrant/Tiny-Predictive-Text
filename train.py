@@ -16,10 +16,7 @@ import gc
 # RECIPES #
 ###########
 # All with chunk size of 1024
-# ??.?MB: Target dictionary count 250,000,   Prune 1,000,000
-# 33.7MB: Target dictionary count 100,000,   Prune 1,000,000
-# 11.9MB: Target dictionary count 25,000,    Prune 10,000,000
-# 5.4MB:  Target dictionary count 10,000,    Prune 10,000,000
+# 1.4MB: Target dictionary count 9 * 1000,   Prune 4 * 1000
 
 PRUNE_FREQUENCY = 4 * 1000 # Every this many chunks
 CHUNK_SIZE = 1024 # 1KB per chunk
@@ -151,12 +148,11 @@ def main():
                   await save_position(progress_file, file.tell(), tree_store)
                   # Reset chunk processed counter after pruning
                   chunks_processed_since_prune = 0
+                  gc.collect()
 
               # Every now and then, prune unpopular entries based on chunks processed
               if chunks_processed_since_prune >= PRUNE_FREQUENCY:
                 asyncio.run(save())
-                gc.collect()
-
 
   create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
 
