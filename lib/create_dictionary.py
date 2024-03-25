@@ -7,7 +7,7 @@ import logging
 # Setup basic configuration for logging
 logging.basicConfig(level=logging.DEBUG)
 
-SUBBRANCH_PRUNE_SIZE = 4
+SUBBRANCH_PRUNE_SIZE = 20
 MAX_PREDICTIONS = 3
 next_token = 0 # Will be incremented by 1 on first usage.
 token_dict = {0: "hello"}
@@ -208,4 +208,4 @@ async def create_dictionary_and_tokenize(tree_store, target_dict_size):
     save_test_dict_files()
 
     print("Finished creating dictionary and tokenization")
-    return
+    return pruned_tree

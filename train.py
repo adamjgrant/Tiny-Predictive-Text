@@ -18,9 +18,9 @@ import gc
 # All with chunk size of 1024
 # 1.4MB: Target dictionary count 9 * 1000,   Prune 4 * 1000
 
-PRUNE_FREQUENCY = 4 * 1000 # Every this many chunks
+PRUNE_FREQUENCY = 8 * 1000 # Every this many chunks
 CHUNK_SIZE = 1024 # 1KB per chunk
-TARGET_DICTIONARY_COUNT = 9 * 1000
+TARGET_DICTIONARY_COUNT = 100
 
 # Define a flag to indicate when an interrupt has been caught
 interrupted = False
@@ -37,6 +37,7 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 def save_tree_store(tree_store):
+    return # TODO Not working
     with open('training/tree_store.pkl', 'wb') as f:
         pickle.dump(tree_store, f, protocol=pickle.HIGHEST_PROTOCOL)
     print("tree_store saved due to interruption.")
@@ -44,6 +45,7 @@ def save_tree_store(tree_store):
 DEFAULT_TREE_STORE ={} 
 
 def load_tree_store():
+    return # TODO Not working
     try:
         with open('training/tree_store.pkl', 'rb') as f:
             return pickle.load(f)
@@ -57,7 +59,8 @@ async def save_position(progress_file, current_position, tree_store):
   with open(progress_file, 'w') as f:
       f.write(str(current_position))
   print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
-  await create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
+  tree_store = await create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
+  return tree_store
 
 # Define a main function to orchestrate the training process
 def main():
@@ -145,7 +148,7 @@ def main():
 
               async def save():
                   nonlocal progress_file, tree_store, file, chunks_processed_since_prune
-                  await save_position(progress_file, file.tell(), tree_store)
+                  tree_store = await save_position(progress_file, file.tell(), tree_store)
                   # Reset chunk processed counter after pruning
                   chunks_processed_since_prune = 0
                   gc.collect()
