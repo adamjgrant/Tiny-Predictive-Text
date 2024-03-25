@@ -54,14 +54,16 @@ textarea {
   max-width: 600px;
   padding: 15px;
   min-height: 350px;
+  border: 1px solid #CCC;
 }
 
 .entry {
   background: darkgrey;
   display: inline;
+  outline: none;
 }
 
-.entry .ghost {
+.entry-holder .ghost {
   color: #CCC;
 }
 

@@ -39,6 +39,7 @@
   const suggestion_element = document.getElementById('suggestion');
   const other_suggestions_element = document.getElementById('other-suggestions');
   const entry_holder = document.getElementById('entry-holder');
+  const ghost = document.getElementById('suggestion-ghost');
 
   set_suggestion_element_color = (object) => {
     const ENUM = { GOOD: "good", BETTER: "better", BEST: "best", IDLE: "idle", INSIDE_PREDICTION: "inside_prediction" }
@@ -57,6 +58,7 @@
 
     if (predictions_on_deck.length === 0 || predictions_on_deck[0] === "" || predictions_on_deck[0] === undefined) {
       suggestion_element.innerHTML = '...';
+      ghost.innerHTML = '';
       return;
     }
     suggestion_element.innerHTML = predictions_on_deck[0];
@@ -69,7 +71,6 @@
       other_suggestions_element.appendChild(secondary_suggestion);
     });
 
-    const ghost = document.getElementById('suggestion-ghost');
     ghost.innerHTML = predictions_on_deck[0];
   }
 
@@ -118,11 +119,13 @@
       selection.addRange(range);
   }
 
-
   window.addEventListener('tinypredict-ready', () => {
     document.body.classList.add('loaded');
 
     const entry = document.getElementById('entry');
+    entry_holder.addEventListener("click", (e) => {
+      entry.focus();
+    });
     entry.addEventListener("keydown", function(event) {
       if (event.key === "Tab") {
         event.preventDefault();
