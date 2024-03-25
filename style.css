@@ -57,6 +57,10 @@ textarea {
   min-height: 350px;
 }
 
+.entry .ghost {
+  color: #CCC;
+}
+
 .loaded .entry {
   background: white;
 }

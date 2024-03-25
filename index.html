@@ -65,8 +65,13 @@
       other_suggestions_element.appendChild(secondary_suggestion);
     });
 
+    const existing_ghost = document.getElementById('suggestion_ghost');
+    if (existing_ghost) existing_ghost.parentElement.removeChild(existing_ghost);
     const suggestion_element_as_span = document.createElement('span');
     suggestion_element_as_span.innerHTML = predictions_on_deck[0];
+    suggestion_element.classList.add("ghost");
+    suggestion_element.contentEditable = false;
+    suggestion_element.id = "suggestion_ghost";
 
     entry.appendChild(suggestion_element_as_span);
   }
