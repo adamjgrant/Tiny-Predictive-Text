@@ -11,13 +11,6 @@
 <p>Press <strong>Tab</strong> to autocomplete with suggestion.<br>
    Press <strong>Shift</strong> to change the suggestion</p>
 <p id="loading" class="loading">Loading model...</p>
-<div id="suggestion">...</div>
-
-<template id="secondary-suggestions">
-  <span class="secondary-suggestion"></span>
-</template>
-
-<div id="other-suggestions" class="other-suggestions"></div>
  
 <div id="entry-holder" class="entry-holder">
   <div id="entry" class="entry" contenteditable="true" placeholder="Start typing"></div>
@@ -27,54 +20,22 @@
   <br>Context string: <code><span id="cs-layer1">...</span> --> <span id="cs-layer2">...</span> --> <span id="cs-layer3">...</span></code>
 </p>
 
-<p>
-  <div class="color_box" style="background-color: rgb(187, 246, 187)"></div> Light green = Good.<br>
-  <div class="color_box" style="background-color: #00cc00"></div> Green = Better<br>
-  <div class="color_box" style="background-color: darkgreen"></div> Dark green = Best<br>
-  <div class="color_box" style="background-color: #EEEEEE;"></div> White = Matching within prediction<br>
-  <div class="color_box" style="background-color: cornflowerblue;"></div> Blue = Idle
-</p>
 <script type="module" src="dist/tinypredict.js"></script>
 <script>
   const suggestion_element = document.getElementById('suggestion');
   const other_suggestions_element = document.getElementById('other-suggestions');
   const entry_holder = document.getElementById('entry-holder');
   const ghost = document.getElementById('suggestion-ghost');
-
-  set_suggestion_element_color = (object) => {
-    const ENUM = { GOOD: "good", BETTER: "better", BEST: "best", IDLE: "idle", INSIDE_PREDICTION: "inside_prediction" }
-    for (let key in ENUM) { let color = ENUM[key]; suggestion_element.classList.remove(`color-${color}`); }
-
-    let context_length = `${object.second_level_context}${object.first_level_context}`.length;
-    if (context_length === 6) color_to_use = ENUM.BEST;
-    else if (context_length > 3) color_to_use = ENUM.BETTER;
-    else if (context_length > 0) color_to_use = ENUM.GOOD;
-    else color_to_use = ENUM.IDLE;
-    suggestion_element.classList.add(`color-${color_to_use}`); 
-  }
+  let predictions_on_deck = [];
 
   const set_suggestion_element = () => {
-    other_suggestions_element.innerHTML = '';
-
     if (predictions_on_deck.length === 0 || predictions_on_deck[0] === "" || predictions_on_deck[0] === undefined) {
-      suggestion_element.innerHTML = '...';
       ghost.innerHTML = '';
       return;
     }
-    suggestion_element.innerHTML = predictions_on_deck[0];
     
-    let other_suggestions = predictions_on_deck.slice(1, predictions_on_deck.length);
-
-    other_suggestions.forEach(suggestion => {
-      let secondary_suggestion = copy_from_template("secondary-suggestions");
-      secondary_suggestion.innerHTML = suggestion;
-      other_suggestions_element.appendChild(secondary_suggestion);
-    });
-
     ghost.innerHTML = predictions_on_deck[0];
   }
-
-  let predictions_on_deck = [];
 
   const completeSuggestion = () => {
     if (predictions_on_deck.length === 0) {
@@ -145,7 +106,6 @@
           set_debugger(suggestions);
           predictions_on_deck = suggestions.prediction;
           set_suggestion_element();
-          set_suggestion_element_color(suggestions);
         });
       }
     });
