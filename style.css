@@ -63,10 +63,6 @@ textarea {
   outline: none;
 }
 
-.entry:after {
-  content: ' ';
-}
-
 .entry-holder .ghost {
   color: #AAA;
 }
