@@ -22,6 +22,7 @@
 
 <script type="module" src="dist/tinypredict.js"></script>
 <script>
+  const entry = document.getElementById('entry');
   const suggestion_element = document.getElementById('suggestion');
   const other_suggestions_element = document.getElementById('other-suggestions');
   const entry_holder = document.getElementById('entry-holder');
@@ -39,11 +40,10 @@
 
   const completeSuggestion = () => {
     if (predictions_on_deck.length === 0) {
-      return;
+      entry.innerText = entry.innerText.trim() + " ";
+      return moveCursorToEnd(entry);
     }
-    const entry = document.getElementById('entry');
-    const space = entry.innerText.endsWith(" ") ? "" : " ";
-    entry.innerText += space + predictions_on_deck[0].trim() + " ";
+    entry.innerText = entry.innerText.trim() + " " + predictions_on_deck[0].trim() + " ";
     predictions_on_deck = [];
     set_suggestion_element();
     moveCursorToEnd(entry);
@@ -86,6 +86,7 @@
     const entry = document.getElementById('entry');
     entry_holder.addEventListener("click", (e) => {
       entry.focus();
+      moveCursorToEnd(entry);
     });
     entry.addEventListener("keydown", function(event) {
       if (event.key === "Tab") {
