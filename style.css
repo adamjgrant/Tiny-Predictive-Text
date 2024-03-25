@@ -49,12 +49,16 @@ textarea {
   opacity: 0;
 }
 
-.entry {
-  background: darkgrey;
+.entry-holder {
+  display: block;
   max-width: 600px;
-  border: 1px solid #CCC;
   padding: 15px;
   min-height: 350px;
+}
+
+.entry {
+  background: darkgrey;
+  display: inline;
 }
 
 .entry .ghost {

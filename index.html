@@ -19,7 +19,10 @@
 
 <div id="other-suggestions" class="other-suggestions"></div>
  
-<div id="entry" class="entry" contenteditable="true" placeholder="Start typing"></div>
+<div id="entry-holder" class="entry-holder">
+  <div id="entry" class="entry" contenteditable="true" placeholder="Start typing"></div>
+  <span id="suggestion-ghost" class="ghost"></span>
+</div>
 <p>
   <br>Context string: <code><span id="cs-layer1">...</span> --> <span id="cs-layer2">...</span> --> <span id="cs-layer3">...</span></code>
 </p>
@@ -35,6 +38,7 @@
 <script>
   const suggestion_element = document.getElementById('suggestion');
   const other_suggestions_element = document.getElementById('other-suggestions');
+  const entry_holder = document.getElementById('entry-holder');
 
   set_suggestion_element_color = (object) => {
     const ENUM = { GOOD: "good", BETTER: "better", BEST: "best", IDLE: "idle", INSIDE_PREDICTION: "inside_prediction" }
@@ -65,15 +69,8 @@
       other_suggestions_element.appendChild(secondary_suggestion);
     });
 
-    const existing_ghost = document.getElementById('suggestion_ghost');
-    if (existing_ghost) existing_ghost.parentElement.removeChild(existing_ghost);
-    const suggestion_element_as_span = document.createElement('span');
-    suggestion_element_as_span.innerHTML = predictions_on_deck[0];
-    suggestion_element.classList.add("ghost");
-    suggestion_element.contentEditable = false;
-    suggestion_element.id = "suggestion_ghost";
-
-    entry.appendChild(suggestion_element_as_span);
+    const ghost = document.getElementById('suggestion-ghost');
+    ghost.innerHTML = predictions_on_deck[0];
   }
 
   let predictions_on_deck = [];
