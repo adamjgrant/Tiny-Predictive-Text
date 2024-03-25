@@ -63,7 +63,7 @@ async def save_position(progress_file, current_position, tree_store):
   return tree_store
 
 # Define a main function to orchestrate the training process
-def main():
+async def main():
   global prune_position_marker
 
   # Parse command line arguments to get the name of the training data file
@@ -157,7 +157,7 @@ def main():
               if chunks_processed_since_prune >= PRUNE_FREQUENCY:
                 asyncio.run(save())
 
-  create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
+  await create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
 
 # Check if the script is being run directly and call the main function
 if __name__ == "__main__":

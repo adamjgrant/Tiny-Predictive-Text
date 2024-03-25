@@ -28,16 +28,15 @@
   const ghost = document.getElementById('suggestion-ghost');
   let predictions_on_deck = [];
 
-  const set_suggestion_element = () => {
+  const set_suggestion_element = (force_remove_space=false) => {
     if (predictions_on_deck.length === 0 || predictions_on_deck[0] === "" || predictions_on_deck[0] === undefined) {
       ghost.innerHTML = '';
       return;
     }
     
     ghost.innerHTML = predictions_on_deck[0];
-    console.log(entry.innerText, entry.innerText.endsWith(" "));
-    if (!entry.innerText.split("").reverse()[0].match(/\s/)) {
-      ghost.innerHTML = ` ${ghost.innerHTML}`;
+    if (!entry.innerText.split("").reverse()[0].match(/\s/) && !force_remove_space) {
+      ghost.innerHTML = ` ${ghost.innerHTML.trim()}`;
     }
   }
 
@@ -86,6 +85,9 @@
   window.addEventListener('tinypredict-ready', () => {
     document.body.classList.add('loaded');
 
+    const get_predictions = (event) => {
+    }
+
     const entry = document.getElementById('entry');
     entry_holder.addEventListener("click", (e) => {
       entry.focus();
@@ -95,17 +97,20 @@
       if (event.key === "Tab") {
         event.preventDefault();
         completeSuggestion();
+      } else if (event.key === " ") {
+        set_suggestion_element(true);
       }
     });
+
     entry.addEventListener("keyup", function(event) {
-      punctuation_regex = /[.\?&\*;:{}=\-_`~()]+/g;
-      const input = event.target.innerText.split(punctuation_regex).pop().trim();
       if (event.key === "Shift") {
         event.preventDefault();
         predictions_on_deck.push(predictions_on_deck.shift());
         set_suggestion_element();
       }
       else {
+        const punctuation_regex = /[.\?&\*;:{}=\-_`~()]+/g;
+        const input = event.target.innerText.split(punctuation_regex).pop().trim();
         window.getPredictiveText(input).then(suggestions => {
           set_debugger(suggestions);
           predictions_on_deck = suggestions.prediction;
