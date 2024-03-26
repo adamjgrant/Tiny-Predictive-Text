@@ -5,6 +5,7 @@ import shutil
 from tqdm import tqdm
 import signal
 import pickle
+from datasets import load_dataset
 from lib.process_predictive_words import main as process_predictive_words
 from lib.process_context_words import main as process_context_words
 from lib.finish_filing import main as finish_filing
@@ -66,11 +67,6 @@ async def save_position(progress_file, current_position, tree_store):
 async def main():
   global prune_position_marker
 
-  # Parse command line arguments to get the name of the training data file
-  if len(sys.argv) < 2:
-        print("Usage: python train.py <name of training data>.txt")
-        sys.exit(1)
-  training_data_file = sys.argv[1]
   retain_data = '--retain' in sys.argv
 
   # If retain flag is set, try to load existing training data
@@ -83,18 +79,15 @@ async def main():
       if os.path.exists('training'):
           shutil.rmtree('training')
       print("Previous training data cleared.")
-  
-  # Get the total size of the file to calculate the number of iterations needed
-  total_size = os.path.getsize(training_data_file)
-  total_iterations = total_size // CHUNK_SIZE + (1 if total_size % CHUNK_SIZE > 0 else 0)
 
+  # Load dataset from Hugging Face datasets
+  # dataset = load_dataset("EleutherAI/pile", split='train') # Defunct :(
+  dataset = load_dataset("gmongaras/EleutherAI_the_pile_deduplicated", split='train')
+  total_iterations = len(dataset)  # Total entries in the dataset
+  
   # Ensure the 'training' directory and its subdirectories/files exist
   dictionaries_path = 'training/dictionaries'
   os.makedirs(dictionaries_path, exist_ok=True)
-
-  # Get the total size of the file to calculate the number of iterations needed
-  total_size = os.path.getsize(training_data_file)
-  total_iterations = total_size // CHUNK_SIZE + (1 if total_size % CHUNK_SIZE > 0 else 0)
 
   # Define a file to store the progress
   progress_file = 'training/processing_progress.txt'
@@ -106,59 +99,42 @@ async def main():
   else:
       last_processed_position = 0
 
-  # Open the file and process it in chunks with tqdm progress bar
-  with open(training_data_file, 'r') as file:
-      # Skip to the last processed position, if any
-      file.seek(last_processed_position)
-      # Initialize the chunk processed counter for pruning logic
-      chunks_processed_since_prune = 0
+  with tqdm(total=total_iterations, unit='entry', desc="Processing dataset") as pbar:
+      for i, entry in enumerate(dataset):
+          text = entry['text']  # Extract text from dataset entry
+          words = text.split() 
 
-      with tqdm(initial=last_processed_position // CHUNK_SIZE, total=total_iterations, unit='chunk', desc="Processing file") as pbar:
-          while True:
-              row = file.read(CHUNK_SIZE)
-              if not row:
-                  break
-              
-              pbar.update(1)
-              words = row.split()
+          # Replace reserved characters as before
+          words = [word.replace("score", "\sscore") for word in words]
+          words = [word.replace("prediction", "\sprediction") for word in words]
 
+          # Process words three at a time with shifting window
+          for j in range(len(words) - 2):
               if interrupted:
                   print("Saving data. Script will terminate when done.")
                   save_tree_store(tree_store)
                   sys.exit(0)
 
-              # - is a reserved character for storing scores.
-              words = [word.replace("score", "\sscore") for word in words]
-              words = [word.replace("prediction", "\sprediction") for word in words]
-              
-              # Process words three at a time with shifting window
-              for i in range(len(words) - 2):
-                  context_words = process_context_words(words, i)
-                  predictive_words = process_predictive_words(words, i)
+              context_words = process_context_words(words, j)
+              predictive_words = process_predictive_words(words, j)
 
-                  if not predictive_words:  # Skip if there are no predictive words
-                      continue
+              if not predictive_words:
+                  continue
 
-                  # It's better to tokenize on the create dictionary step so we're not
-                  # tokenizing words that we don't end up needing. Create dict will make a fresh
-                  # token dict on each run.
-                  tree_store = finish_filing(tree_store, context_words, predictive_words)
+              # It's better to tokenize on the create dictionary step so we're not
+              # tokenizing words that we don't end up needing. Create dict will make a fresh
+              # token dict on each run.
+              tree_store = finish_filing(tree_store, context_words, predictive_words)
 
-              chunks_processed_since_prune += 1  # Increment chunk processed counter
+          pbar.update(1)
 
-              async def save():
-                  nonlocal progress_file, tree_store, file, chunks_processed_since_prune
-                  tree_store = await save_position(progress_file, file.tell(), tree_store)
-                  # Reset chunk processed counter after pruning
-                  chunks_processed_since_prune = 0
-                  gc.collect()
-
-              # Every now and then, prune unpopular entries based on chunks processed
-              if chunks_processed_since_prune >= PRUNE_FREQUENCY:
-                asyncio.run(save())
-
-  await create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
+          if (i + 1) % PRUNE_FREQUENCY == 0:
+              # Save position and prune every PRUNE_FREQUENCY entries
+              tree_store = await save_position('training/processing_progress.txt', i + 1, tree_store)
+              gc.collect()
+            
+      await create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
 
 # Check if the script is being run directly and call the main function
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
