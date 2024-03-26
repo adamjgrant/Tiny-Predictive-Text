@@ -16,11 +16,8 @@ import gc
 ###########
 # RECIPES #
 ###########
-# All with chunk size of 1024
-# 1.4MB: Target dictionary count 9 * 1000,   Prune 4 * 1000
-
-PRUNE_FREQUENCY = 4 * 1000 # Every this many entries
-CHUNK_SIZE = 1024 # 1KB per chunk
+# 1.4MB: ? Target dictionary count ? Prune frequency
+PRUNE_FREQUENCY = 4 * 1000 * 1000 # Every this many words
 TARGET_DICTIONARY_COUNT = 100
 
 # Define a flag to indicate when an interrupt has been caught
@@ -67,13 +64,12 @@ async def main():
   os.makedirs(dictionaries_path, exist_ok=True)
 
   # As we can't determine total_iterations upfront, we skip it in tqdm
-  pbar = tqdm(unit='entry', desc="Processing dataset")
+  pbar = tqdm(total=TOTAL_WORD_COUNT, unit='word', desc="Processing dataset", position=1)
   word_count = 0
   for i, entry in enumerate(dataset):
       text = entry['text']  # Extract text from dataset entry
       words = text.split()
 
-      word_count += len(words)
       pbar.update(len(words))
 
       # Replace reserved characters as before
@@ -82,6 +78,7 @@ async def main():
 
       # Process words three at a time with shifting window
       for j in range(len(words) - 2):
+          word_count += 1
           if interrupted:
               print("Script will terminate when done.")
               sys.exit(0)
@@ -94,12 +91,12 @@ async def main():
 
           tree_store = finish_filing(tree_store, context_words, predictive_words)
 
-      pbar.update(1)
+          if (word_count + 1) % PRUNE_FREQUENCY == 0:
+              # Save position and prune every PRUNE_FREQUENCY entries
+              tree_store = await save_position('training/processing_progress.txt', i + 1, tree_store)
+              gc.collect()
 
-      if (i + 1) % PRUNE_FREQUENCY == 0:
-          # Save position and prune every PRUNE_FREQUENCY entries
-          tree_store = await save_position('training/processing_progress.txt', i + 1, tree_store)
-          gc.collect()
+      pbar.update(1)
             
   await create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
 

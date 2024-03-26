@@ -186,6 +186,7 @@ def save_test_dict_files():
   
 async def create_dictionary_and_tokenize(tree_store, target_dict_size):
     global token_dict
+    print("\n")
     print("Creating dictionary and tokenizing")
 
     # First, prune and sort the dictionary based on scores
