@@ -19,7 +19,7 @@ import gc
 # All with chunk size of 1024
 # 1.4MB: Target dictionary count 9 * 1000,   Prune 4 * 1000
 
-PRUNE_FREQUENCY = 8 * 1000 # Every this many chunks
+PRUNE_FREQUENCY = 8 # Every this many entries
 CHUNK_SIZE = 1024 # 1KB per chunk
 TARGET_DICTIONARY_COUNT = 100
 
@@ -37,21 +37,7 @@ def signal_handler(sig, frame):
 # Register the signal handler
 signal.signal(signal.SIGINT, signal_handler)
 
-def save_tree_store(tree_store):
-    return # TODO Not working
-    with open('training/tree_store.pkl', 'wb') as f:
-        pickle.dump(tree_store, f, protocol=pickle.HIGHEST_PROTOCOL)
-    print("tree_store saved due to interruption.")
-
 DEFAULT_TREE_STORE ={} 
-
-def load_tree_store():
-    return # TODO Not working
-    try:
-        with open('training/tree_store.pkl', 'rb') as f:
-            return pickle.load(f)
-    except FileNotFoundError:
-        return DEFAULT_TREE_STORE
 
 async def save_position(progress_file, current_position, tree_store):
   # Every now and then save our progress.
@@ -67,18 +53,10 @@ async def save_position(progress_file, current_position, tree_store):
 async def main():
   global prune_position_marker
 
-  retain_data = '--retain' in sys.argv
-
-  # If retain flag is set, try to load existing training data
-  if retain_data:
-      tree_store = load_tree_store()
-      print("Retained data loaded.")
-  else:
-      # If not retaining data, clear existing training directory and start fresh
-      tree_store = DEFAULT_TREE_STORE
-      if os.path.exists('training'):
-          shutil.rmtree('training')
-      print("Previous training data cleared.")
+  tree_store = DEFAULT_TREE_STORE
+  if os.path.exists('training'):
+      shutil.rmtree('training')
+  print("Previous training data cleared.")
 
   # Load dataset from Hugging Face datasets
   # dataset = load_dataset("EleutherAI/pile", split='train') # Defunct :(
@@ -88,16 +66,6 @@ async def main():
   # Ensure the 'training' directory and its subdirectories/files exist
   dictionaries_path = 'training/dictionaries'
   os.makedirs(dictionaries_path, exist_ok=True)
-
-  # Define a file to store the progress
-  progress_file = 'training/processing_progress.txt'
-
-  # Check if progress file exists and read the last processed byte position
-  if os.path.exists(progress_file):
-      with open(progress_file, 'r') as f:
-          last_processed_position = int(f.read().strip())
-  else:
-      last_processed_position = 0
 
   with tqdm(total=total_iterations, unit='entry', desc="Processing dataset") as pbar:
       for i, entry in enumerate(dataset):
@@ -111,8 +79,7 @@ async def main():
           # Process words three at a time with shifting window
           for j in range(len(words) - 2):
               if interrupted:
-                  print("Saving data. Script will terminate when done.")
-                  save_tree_store(tree_store)
+                  print("Script will terminate when done.")
                   sys.exit(0)
 
               context_words = process_context_words(words, j)

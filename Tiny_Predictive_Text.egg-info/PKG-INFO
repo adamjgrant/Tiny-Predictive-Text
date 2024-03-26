@@ -1,0 +1,10 @@
+Metadata-Version: 2.1
+Name: Tiny-Predictive-Text
+Version: 12.0
+Summary: Tiny Predictive Text
+Author: Adam Grant
+Author-email: hello@adamgrant.me
+Requires-Dist: tqdm
+Requires-Dist: msgpack
+Requires-Dist: asyncio; python_version < "3.7"
+Requires-Dist: datasets

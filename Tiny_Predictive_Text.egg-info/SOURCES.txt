@@ -1,0 +1,7 @@
+README.md
+setup.py
+Tiny_Predictive_Text.egg-info/PKG-INFO
+Tiny_Predictive_Text.egg-info/SOURCES.txt
+Tiny_Predictive_Text.egg-info/dependency_links.txt
+Tiny_Predictive_Text.egg-info/requires.txt
+Tiny_Predictive_Text.egg-info/top_level.txt
