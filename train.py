@@ -12,13 +12,7 @@ from lib.finish_filing import main as finish_filing
 from lib.create_dictionary import create_dictionary_and_tokenize
 import asyncio
 import gc
-
-###########
-# RECIPES #
-###########
-# 1.4MB: ? Target dictionary count ? Prune frequency
-PRUNE_FREQUENCY = 4 * 1000 * 1000 # Every this many words
-TARGET_DICTIONARY_COUNT = 100
+from constants import PRUNE_FREQUENCY, TARGET_DICTIONARY_COUNT, TOTAL_WORD_COUNT
 
 # Define a flag to indicate when an interrupt has been caught
 interrupted = False
@@ -36,15 +30,14 @@ DEFAULT_TREE_STORE ={}
 async def save_position(progress_file, current_position, tree_store):
   # Every now and then save our progress.
   print(f"Saving the current position of %s" % current_position)
+
   # Save the current progress (file position)
   with open(progress_file, 'w') as f:
       f.write(str(current_position))
-  print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
-  tree_store = await create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
-  return tree_store
 
-# Total number of words in the dataset acc to https://huggingface.co/datasets/oscar-corpus/OSCAR-2201
-TOTAL_WORD_COUNT = 377376402775  
+  print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
+  await create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
+  return DEFAULT_TREE_STORE
 
 # Define a main function to orchestrate the training process
 async def main():
@@ -53,16 +46,15 @@ async def main():
       shutil.rmtree('training')
   print("Previous training data cleared.")
 
+  training_path = 'training'
+  os.makedirs(training_path, exist_ok=True)
+
   # Load dataset from Hugging Face datasets
   datasets.logging.set_verbosity(datasets.logging.WARNING)
   logging.getLogger('fsspec').setLevel(logging.WARNING)
   logging.getLogger('urllib3').setLevel(logging.WARNING)
   dataset = datasets.load_dataset('oscar-corpus/OSCAR-2201', language='en', split='train', streaming=True)
   
-  # Ensure the 'training' directory and its subdirectories/files exist
-  dictionaries_path = 'training/dictionaries'
-  os.makedirs(dictionaries_path, exist_ok=True)
-
   # As we can't determine total_iterations upfront, we skip it in tqdm
   pbar = tqdm(total=TOTAL_WORD_COUNT, unit='word', desc="Processing dataset", position=1)
   word_count = 0

@@ -1,14 +1,14 @@
-import json
 import msgpack
 import copy
-import asyncio
 import logging
+import pickle
+import datetime
+import os
+from constants import MAX_PREDICTIONS, SUBBRANCH_PRUNE_SIZE
 
 # Setup basic configuration for logging
 logging.basicConfig(level=logging.DEBUG)
 
-SUBBRANCH_PRUNE_SIZE = 20
-MAX_PREDICTIONS = 3
 next_token = 0 # Will be incremented by 1 on first usage.
 token_dict = {0: "hello"}
 word_dict = {"hello": 0}
@@ -193,6 +193,18 @@ async def create_dictionary_and_tokenize(tree_store, target_dict_size):
     print("Pruning")
     pruned_tree = create_dictionary(tree_store, target_dict_size)
 
+    epochs_path = 'training/epochs'
+    os.makedirs(epochs_path, exist_ok=True)
+
+    epoch_filename = f"{epochs_path}/pruned_tree_epoch_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.pkl"
+    
+    # Saving the pruned tree to a pickle file
+    with open(epoch_filename, 'wb') as pickle_file:
+        pickle.dump(pruned_tree, pickle_file)
+
+    print(f"💾 New Epoch {epoch_filename} Saved.")
+
+    # TODO: These should migrate to the epoch consolidation steps.
     # Remove score values and other complications we don't need in the final dict.
     print("Simplifying")
     # Allow the running program to keep working on the unsimplified and untokenized tree.
@@ -209,4 +221,3 @@ async def create_dictionary_and_tokenize(tree_store, target_dict_size):
     save_test_dict_files()
 
     print("Finished creating dictionary and tokenization")
-    return pruned_tree
