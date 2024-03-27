@@ -4,7 +4,7 @@ import logging
 import pickle
 import datetime
 import os
-from constants import MAX_PREDICTIONS, SUBBRANCH_PRUNE_SIZE
+from lib.constants import MAX_PREDICTIONS, SUBBRANCH_PRUNE_SIZE
 
 # Setup basic configuration for logging
 logging.basicConfig(level=logging.DEBUG)
@@ -135,7 +135,6 @@ def remove_scores_and_flatten_predictions(tree):
         for i, item in enumerate(tree):
             tree[i] = remove_scores_and_flatten_predictions(item)
     return tree
-
 
 def save_to_dict_files(pruned_tree, token_dict):
     print("Saving dictionaries to files.")

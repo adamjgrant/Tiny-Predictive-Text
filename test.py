@@ -2,6 +2,7 @@ import unittest
 
 from lib.finish_filing import main as finish_filing
 from lib.create_dictionary import create_dictionary, create_token_dict, remove_scores_and_flatten_predictions
+from lib.merge_epochs import merge
 
 class TestFiling(unittest.TestCase):
     def test_basic_input(self):
@@ -60,7 +61,25 @@ class TestCreateDictionary(unittest.TestCase):
       actual_tokenized_tree = create_token_dict(simplified)
 
       self.assertEqual(actual_tokenized_tree, expected_tokenized_tree)
-      
+
+class TestMergingAndPruningEpochs(unittest.TestCase):      
+    def test_merging_epochs(self):
+        tree_1 = {
+                   "a": {"score": 0, "a1": {"score": 0, "a2": { "score": 0, "predictions": [["ax", "ay", "az"], ["aalpha", "abeta", "atheta"]]}}},
+                   "b": {"score": 0, "b1": {"score": 0, "b2": { "score": 0, "predictions": [["bx", "by", "bz"], ["balpha", "bbeta", "btheta"]]}}},
+                 }
+        tree_2 = {
+                   "a": {"score": 0, "a1": {"score": 0, "a2": { "score": 0, "predictions": [["ax", "ay", "az"], ["aalpha", "abeta", "atheta"]]}}},
+                   "c": {"score": 0, "c1": {"score": 0, "c2": { "score": 0, "predictions": [["cx", "cy", "cz"], ["calpha", "cbeta", "ctheta"]]}}},
+                 }
+        expected_merged_tree = {
+                      "a": {"score": 1, "a1": {"score": 1, "a2": { "score": 1, "predictions": [["ax", "ay", "az"], ["aalpha", "abeta", "atheta"]]}}},
+                      "b": {"score": 0, "b1": {"score": 0, "b2": { "score": 0, "predictions": [["bx", "by", "bz"], ["balpha", "bbeta", "btheta"]]}}},
+                      "c": {"score": 0, "c1": {"score": 0, "c2": { "score": 0, "predictions": [["cx", "cy", "cz"], ["calpha", "cbeta", "ctheta"]]}}},
+        }
+        actual_merged_tree = merge(tree_1, tree_2)
+
+        self.assertEqual(actual_merged_tree, expected_merged_tree)
 
 if __name__ == '__main__':
     unittest.main()

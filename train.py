@@ -12,7 +12,7 @@ from lib.finish_filing import main as finish_filing
 from lib.create_dictionary import create_dictionary_and_tokenize
 import asyncio
 import gc
-from constants import PRUNE_FREQUENCY, TARGET_DICTIONARY_COUNT, TOTAL_WORD_COUNT
+from lib.constants import PRUNE_FREQUENCY, TARGET_DICTIONARY_COUNT, TOTAL_WORD_COUNT
 
 # Define a flag to indicate when an interrupt has been caught
 interrupted = False
