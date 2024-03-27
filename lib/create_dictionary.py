@@ -7,7 +7,7 @@ import logging
 # Setup basic configuration for logging
 logging.basicConfig(level=logging.DEBUG)
 
-SUBBRANCH_PRUNE_SIZE = 20
+SUBBRANCH_PRUNE_SIZE = 21
 MAX_PREDICTIONS = 3
 next_token = 0 # Will be incremented by 1 on first usage.
 token_dict = {0: "hello"}
