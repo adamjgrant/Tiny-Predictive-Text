@@ -1,16 +1,12 @@
 wasm/target
 training
-train.csv
-train.txt
-train.bak.txt
 dictionary.js
 dictionary.json
+dictionary-test.msgpack
+tokens-test.msgpack
 tokens.json
 # tokens.msgpack
 # dictionary.msgpack
-dictionary-fingerprint.js
-dictionary-anchors.js
-dictionary-properties.js
 .DS_Store
 __pycache__
 node_modules
