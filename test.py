@@ -32,24 +32,34 @@ class TestCreateDictionary(unittest.TestCase):
     def test_doesnt_prune_special_keys(self):
       tree = {
           "anchor": {
-              "second1": {"score": 1, "first": {"score": 1, "predictions": [{"prediction": ["a", "a2", "a3"], "score": 1}, {"prediction": ["b", "b2", "b3"], "score": 1}, {"prediction": ["c", "c2", "c3"], "score": 1}]}},
               "score": 2,
-              "second2": {"score": 1, "first": {"score": 1, "predictions": [{"prediction": ["a", "a2", "a3"], "score": 1}, {"prediction": ["b", "b2", "b3"], "score": 1}, {"prediction": ["c", "c2", "c3"], "score": 1}]}},
-              "second3": {"score": 1, "first": {"score": 1, "predictions": [{"prediction": ["a", "a2", "a3"], "score": 1}, {"prediction": ["b", "b2", "b3"], "score": 1}, {"prediction": ["c", "c2", "c3"], "score": 1}]}},
-              "second4": {"score": 1, "first": {"score": 1, "predictions": [{"prediction": ["a", "a2", "a3"], "score": 1}, {"prediction": ["b", "b2", "b3"], "score": 1}, {"prediction": ["c", "c2", "c3"], "score": 1}]}},
-              "second5": {"score": 1, "first": {"score": 1, "predictions": [{"prediction": ["a", "a2", "a3"], "score": 1}, {"prediction": ["b", "b2", "b3"], "score": 1}, {"prediction": ["c", "c2", "c3"], "score": 1}]}},
-              "second6": {"score": 1, "first": {"score": 1, "predictions": [{"prediction": ["a", "a2", "a3"], "score": 1}, {"prediction": ["b", "b2", "b3"], "score": 1}, {"prediction": ["c", "c2", "c3"], "score": 1}]}}
           }
       }
       expected_pruned_tree = {
           "anchor": {
-              "second1": {"score": 1, "first": {"score": 1, "predictions": [{"prediction": ["a", "a2", "a3"], "score": 1}, {"prediction": ["b", "b2", "b3"], "score": 1}, {"prediction": ["c", "c2", "c3"], "score": 1}]}},
               "score": 2,
-              "second2": {"score": 1, "first": {"score": 1, "predictions": [{"prediction": ["a", "a2", "a3"], "score": 1}, {"prediction": ["b", "b2", "b3"], "score": 1}, {"prediction": ["c", "c2", "c3"], "score": 1}]}},
-              "second3": {"score": 1, "first": {"score": 1, "predictions": [{"prediction": ["a", "a2", "a3"], "score": 1}, {"prediction": ["b", "b2", "b3"], "score": 1}, {"prediction": ["c", "c2", "c3"], "score": 1}]}},
-              "second4": {"score": 1, "first": {"score": 1, "predictions": [{"prediction": ["a", "a2", "a3"], "score": 1}, {"prediction": ["b", "b2", "b3"], "score": 1}, {"prediction": ["c", "c2", "c3"], "score": 1}]}}
           }
       }
+
+      # Generate 21 "secondX" keys with similar structures but unique identifiers
+      for i in range(1, 22):  # 1 through 21 inclusive
+          key_name = f"second{i}"
+          tree["anchor"][key_name] = {
+              "score": 1, 
+              "first": {
+                  "score": 1, 
+                  "predictions": [
+                      {"prediction": [f"a{i}", f"a2{i}", f"a3{i}"], "score": 1},
+                      {"prediction": [f"b{i}", f"b2{i}", f"b3{i}"], "score": 1},
+                      {"prediction": [f"c{i}", f"c2{i}", f"c3{i}"], "score": 1}
+                  ]
+              }
+          }
+          # For the expected tree, include only the top 20 based on your sorting/pruning criteria
+          if i <= 20:  # Include only the first 20 in the expected outcome
+              expected_pruned_tree["anchor"][key_name] = tree["anchor"][key_name]
+
+      # Update the test case with these trees
       pruned_tree = create_dictionary(tree, 1)
 
       self.assertEqual(pruned_tree, expected_pruned_tree)

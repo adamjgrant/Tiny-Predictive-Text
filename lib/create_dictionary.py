@@ -67,9 +67,9 @@ def create_dictionary(tree_store, target_dict_size):
 
     def prune_top_level_entries_by_limit(tree, limit):
         pruned_tree = tree
-        keys_to_delete = list(tree.keys())[limit:len(tree.keys())]
+        keys_to_delete = list(tree.keys())[limit:]
         for key in keys_to_delete:
-          pruned_tree.pop(key)
+            pruned_tree.pop(key)
         return pruned_tree
 
     top_sorted_tree = sort_keys_by_score(tree_store)
@@ -77,8 +77,8 @@ def create_dictionary(tree_store, target_dict_size):
 
     def prune_and_sort_lower_branches(subtree, limit):
         if isinstance(subtree, dict):
-            # Special handling to preserve the "score" and "predictions" keys correctly
-            score = subtree.get("score", False)  # Preserve the existing score, if any
+            # Directly check for existence rather than getting a False default
+            score_present = "score" in subtree  # Check if 'score' key exists
             predictions = subtree.get("predictions", False)  # Preserve predictions, if any
             
             # Filter out the special keys for sorting and pruning operations
@@ -87,12 +87,12 @@ def create_dictionary(tree_store, target_dict_size):
             top_sorted_subtree = sort_keys_by_score(filtered_subtree)
             pruned_subtree = prune_top_level_entries_by_limit(top_sorted_subtree, limit)
             
-            # Re-insert the preserved score and predictions into the pruned subtree
-            if score:
-                pruned_subtree["score"] = score
+            # Re-insert the 'score' if it was originally present, using a more reliable check
+            if score_present:
+                pruned_subtree["score"] = subtree["score"]  # Directly use the value from original subtree
             
             if predictions:  # Check if there's something to re-insert
-              # Sort the list of dictionaries by the 'score' key in descending order and slice to keep only MAX_PREDICTIONS items
+              # This section seems correct; ensure MAX_PREDICTIONS is defined or handled appropriately
               sorted_predictions = sorted(predictions, key=lambda x: x['score'], reverse=True)[:MAX_PREDICTIONS]
               pruned_subtree["predictions"] = sorted_predictions
 
@@ -103,7 +103,8 @@ def create_dictionary(tree_store, target_dict_size):
                     
             return pruned_subtree
         else:
-              return subtree
+            return subtree
+
 
     for k in list(top_pruned_tree.keys()):
         if k != "score":
