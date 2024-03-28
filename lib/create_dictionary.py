@@ -192,6 +192,8 @@ async def create_dictionary_and_tokenize(tree_store, target_dict_size):
     print("Pruning")
     pruned_tree = create_dictionary(tree_store, target_dict_size)
 
+    tree_store.clear()
+
     epochs_path = 'training/epochs'
     os.makedirs(epochs_path, exist_ok=True)
 
