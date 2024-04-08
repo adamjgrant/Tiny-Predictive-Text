@@ -13,6 +13,7 @@ from lib.create_dictionary import create_dictionary_and_tokenize
 import asyncio
 import gc
 from lib.constants import PRUNE_FREQUENCY, TARGET_DICTIONARY_COUNT, TOTAL_WORD_COUNT
+import argparse  # Import argparse for command-line parsing
 
 # Define a flag to indicate when an interrupt has been caught
 interrupted = False
@@ -27,24 +28,23 @@ signal.signal(signal.SIGINT, signal_handler)
 
 DEFAULT_TREE_STORE ={} 
 
-async def save_position(progress_file, current_position, tree_store):
+async def save_position(progress_file, current_position, word_count, tree_store):
   # Every now and then save our progress.
   print(f"Saving the current position of %s" % current_position)
 
   # Save the current progress (file position)
   with open(progress_file, 'w') as f:
-      f.write(str(current_position))
+      f.write(f"{str(current_position)},{str(word_count)}")
 
   print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
   await create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
   return DEFAULT_TREE_STORE
 
-# Define a main function to orchestrate the training process
-async def main():
+async def main(retain=False):
   tree_store = DEFAULT_TREE_STORE
-  if os.path.exists('training'):
+  if not retain and os.path.exists('training'):
       shutil.rmtree('training')
-  print("Previous training data cleared.")
+      print("Previous training data cleared.")
 
   training_path = 'training'
   os.makedirs(training_path, exist_ok=True)
@@ -53,12 +53,27 @@ async def main():
   datasets.logging.set_verbosity(datasets.logging.WARNING)
   logging.getLogger('fsspec').setLevel(logging.WARNING)
   logging.getLogger('urllib3').setLevel(logging.WARNING)
-  dataset = datasets.load_dataset('oscar-corpus/OSCAR-2201', language='en', split='train', streaming=True)
+  dataset = datasets.load_dataset('oscar-corpus/OSCAR-2201', language='en', split='train', streaming=True, trust_remote_code=True)
   
-  # As we can't determine total_iterations upfront, we skip it in tqdm
-  pbar = tqdm(total=TOTAL_WORD_COUNT, unit='word', desc="Processing dataset", position=1)
+  # Initialize start_position and word_length to 0
+  start_position = 0
   word_count = 0
-  for i, entry in enumerate(dataset):
+
+  # Check if the --retain flag is used and if the progress file exists
+  if retain and os.path.exists('training/processing_progress.txt'):
+      with open('training/processing_progress.txt', 'r') as f:
+          # Read the line and split it by the comma to get both values
+          start_position_str, word_length_str = f.read().strip().split(',')
+          # Convert the string values to integers
+          start_position = int(start_position_str)
+          word_count = int(word_length_str)
+          print(f"Resuming from position {start_position} with {word_count} total words processed.")
+
+  pbar = tqdm(total=TOTAL_WORD_COUNT, unit='word', desc="Processing dataset", position=1)
+  pbar.update(word_count)
+  for i, entry in enumerate(dataset.skip(start_position)):
+      if i + start_position < start_position:
+          continue  # Skip to the saved position
       text = entry['text']  # Extract text from dataset entry
       words = text.split()
 
@@ -85,13 +100,14 @@ async def main():
 
           if (word_count + 1) % PRUNE_FREQUENCY == 0:
               # Save position and prune every PRUNE_FREQUENCY entries
-              tree_store = await save_position('training/processing_progress.txt', i + 1, tree_store)
+              tree_store = await save_position('training/processing_progress.txt', i + start_position + 1, word_count, tree_store)
               gc.collect()
-
-      pbar.update(1)
             
   await create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
 
-# Check if the script is being run directly and call the main function
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description='Training script with position retain functionality.')
+    parser.add_argument('--retain', action='store_true', help='Retain and resume from last saved position.')
+    args = parser.parse_args()
+    
+    asyncio.run(main(retain=args.retain))

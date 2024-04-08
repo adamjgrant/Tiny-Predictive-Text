@@ -195,18 +195,18 @@ async def create_dictionary_and_tokenize(tree_store, target_dict_size):
 
     tree_store.clear()
 
-    epochs_path = 'training/epochs'
-    os.makedirs(epochs_path, exist_ok=True)
+    batches_path = 'training/batches'
+    os.makedirs(batches_path, exist_ok=True)
 
-    epoch_filename = f"{epochs_path}/pruned_tree_epoch_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.pkl"
+    batch_filename = f"{batches_path}/pruned_tree_batch_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.pkl"
     
     # Saving the pruned tree to a pickle file
-    with open(epoch_filename, 'wb') as pickle_file:
+    with open(batch_filename, 'wb') as pickle_file:
         pickle.dump(pruned_tree, pickle_file)
 
-    print(f"💾 New Epoch {epoch_filename} Saved.")
+    print(f"💾 New batch {batch_filename} Saved.")
 
-    # TODO: These should migrate to the epoch consolidation steps.
+    # TODO: These should migrate to the batch consolidation steps.
     # Remove score values and other complications we don't need in the final dict.
     print("Simplifying")
     # Allow the running program to keep working on the unsimplified and untokenized tree.
