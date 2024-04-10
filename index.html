@@ -58,10 +58,12 @@
   const cs_layer1 = document.getElementById('cs-layer1');
   const cs_layer2 = document.getElementById('cs-layer2');
   const cs_layer3 = document.getElementById('cs-layer3');
+  const quality_score = document.getElementById('quality-score');
   const set_debugger = (suggestions) => {
     cs_layer1.innerHTML = suggestions.second_level_context;
     cs_layer2.innerHTML = suggestions.first_level_context;
     cs_layer3.innerHTML = suggestions.anchor
+    quality_score.innerHTML = suggestions.quality;
   }
 
   function moveCursorToEnd(contentEditableElement) {
@@ -113,10 +115,9 @@
         const punctuation_regex = /[.\?&\*;:{}=\-_`~()]+/g;
         const input = event.target.innerText.split(punctuation_regex).pop().trim();
         window.getPredictiveText(input).then(suggestions => {
-          console.log(suggestions);
           set_debugger(suggestions);
           predictions_on_deck = suggestions.prediction;
-          if (suggestions.length) set_suggestion_element();
+          set_suggestion_element();
         });
       }
     });

@@ -204,7 +204,7 @@ fn filter_dictionary_on_anchor(processed_input: &PredictiveTextContext) -> (Pred
 
 // Calculates quality based on the best match's Levenshtein distance
 fn calculate_quality(best_distance: usize, max_distance: usize) -> i32 {
-  (100 * (1 - best_distance as i32 / max_distance as i32).max(0).min(1) as i32) / 2  // divides the score by 2 to scale to 50
+  ((100.0 * (1.0 - best_distance as f32 / max_distance as f32).max(0.0).min(1.0)) / 2.0) as i32  // divides the score by 2 to scale to 50
 }
 
 fn match_x_level_context(
