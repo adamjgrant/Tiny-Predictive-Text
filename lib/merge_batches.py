@@ -3,7 +3,7 @@ import shutil
 import pickle
 import threading
 from .constants import TARGET_DICTIONARY_COUNT, MAX_PREDICTIONS, SUBBRANCH_PRUNE_SIZE
-from .create_dictionary import create_dictionary
+from .create_dictionary import create_dictionary_and_tokenize
 # PRUNE_FREQUENCY = 4 * 1000 * 1000 # Every this many words
 # TARGET_DICTIONARY_COUNT = 100
 
@@ -242,7 +242,7 @@ def finish_merge():
     # Rename the first batch file to dictionary.pkl
     shutil.move(f'training/batches_to_process/{batches_files[0]}', 'training/dictionary.pkl')
 
-    create_dictionary() 
+    create_dictionary_and_tokenize() 
 
 def main():
     # If training/batches has more than one file, run the function with the first two files
