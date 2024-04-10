@@ -1,6 +1,7 @@
 import os
 import shutil
 import pickle
+from constants import TARGET_DICTIONARY_COUNT, MAX_PREDICTIONS, SUBBRANCH_PRUNE_SIZE
 
 # Ensure the directories exist
 os.makedirs('training/merged_batches', exist_ok=True)
@@ -62,8 +63,64 @@ def merge(tree1, tree2):
 
     return merged_tree
   
-def prune(content):
-  return # TODO
+def prune(merged_content, target_dict_size=TARGET_DICTIONARY_COUNT):
+    def sort_keys_by_score(tree):
+          # Sorts the tree's top-level keys based on their child score "score", highest first
+          # Keeps the "score" key intact
+          sorted_items = sorted(
+              [(k, v) for k, v in tree.items() if k != "score" and isinstance(v, dict)],
+              key=lambda item: item[1]["score"] if "score" in item[1] else 0, reverse=True
+          )
+          sorted_tree = {"score": tree.get("score", 0)} if "score" in tree else {}  # Preserve "score" score if it exists
+          sorted_tree.update(dict(sorted_items))
+          return sorted_tree
+
+    def prune_top_level_entries_by_limit(tree, target_dict_size):
+          pruned_tree = tree
+          keys_to_delete = list(tree.keys())[target_dict_size:]
+          for key in keys_to_delete:
+              pruned_tree.pop(key)
+          return pruned_tree
+
+    top_sorted_tree = sort_keys_by_score(merged_content)
+    top_pruned_tree = prune_top_level_entries_by_limit(top_sorted_tree, target_dict_size)
+
+    def prune_and_sort_lower_branches(subtree, limit):
+        if isinstance(subtree, dict):
+            # Directly check for existence rather than getting a False default
+            score_present = "score" in subtree  # Check if 'score' key exists
+            predictions = subtree.get("predictions", False)  # Preserve predictions, if any
+            
+            # Filter out the special keys for sorting and pruning operations
+            filtered_subtree = {k: v for k, v in subtree.items() if k not in ["score", "predictions"]}
+            
+            top_sorted_subtree = sort_keys_by_score(filtered_subtree)
+            pruned_subtree = prune_top_level_entries_by_limit(top_sorted_subtree, limit)
+            
+            # Re-insert the 'score' if it was originally present, using a more reliable check
+            if score_present:
+                pruned_subtree["score"] = subtree["score"]  # Directly use the value from original subtree
+            
+            if predictions:  # Check if there's something to re-insert
+              # This section seems correct; ensure MAX_PREDICTIONS is defined or handled appropriately
+              sorted_predictions = sorted(predictions, key=lambda x: x['score'], reverse=True)[:MAX_PREDICTIONS]
+              pruned_subtree["predictions"] = sorted_predictions
+
+            # Recursively process each child, skipping special keys
+            for k, v in list(pruned_subtree.items()):
+                if k not in ["score", "predictions"] and isinstance(v, dict):
+                    pruned_subtree[k] = prune_and_sort_lower_branches(v, SUBBRANCH_PRUNE_SIZE)
+                    
+            return pruned_subtree
+        else:
+            return subtree
+
+    for k in list(top_pruned_tree.keys()):
+        if k != "score":
+            subtree = top_pruned_tree[k]
+            top_pruned_tree[k] = prune_and_sort_lower_branches(subtree, SUBBRANCH_PRUNE_SIZE)
+
+    return top_pruned_tree 
 
 def merge_and_prune_files(file1_path, file2_path):
     # Get the contents of each file
@@ -72,8 +129,8 @@ def merge_and_prune_files(file1_path, file2_path):
         content2 = pickle.load(f2)
 
     # Merge and prune
-    merged_content = merge(content1, content2)  # Assuming merge is a defined function
-    pruned_content = prune(merged_content)  # Assuming prune is a defined function
+    merged_content = merge(content1, content2)
+    pruned_content = prune(merged_content)
 
     # Save the result in training/merged_batches
     merged_filename = os.path.basename(file1_path).replace('.pkl', '') + '_merged.pkl'
@@ -83,6 +140,7 @@ def merge_and_prune_files(file1_path, file2_path):
     # Move the two files into training/processed_batches
     shutil.move(file1_path, f'training/processed_batches/{os.path.basename(file1_path)}')
     shutil.move(file2_path, f'training/processed_batches/{os.path.basename(file2_path)}')
+    print(f'Merged and pruned {file1_path} and {file2_path} into {merged_filename}.')
 
     # Check for remaining files and act accordingly
     remaining_files = os.listdir('training/batches')
@@ -95,12 +153,16 @@ def merge_and_prune_files(file1_path, file2_path):
         if len(remaining_files) > 1:
             merge_and_prune_files('training/batches/' + remaining_files[0], 'training/batches/' + remaining_files[1])
 
-# # If training/batches has more than one file, run the function with the first two files
-# batches_files = sorted(os.listdir('training/batches'))
-# if len(batches_files) > 1:
-#     merge_and_prune_files(f'training/batches/{batches_files[0]}', f'training/batches/{batches_files[1]}')
-# elif len(batches_files) == 1:
-#     # If there is only one file, move it to processed and make a copy in merged
-#     single_file_path = f'training/batches/{batches_files[0]}'
-#     shutil.move(single_file_path, f'training/processed_batches/{batches_files[0]}')
-#     shutil.copy(f'training/processed_batches/{batches_files[0]}', 'training/merged_batches/merged_batch.pkl')
+def main():
+    # If training/batches has more than one file, run the function with the first two files
+    batches_files = sorted(os.listdir('training/batches'))
+    if len(batches_files) > 1:
+        merge_and_prune_files(f'training/batches/{batches_files[0]}', f'training/batches/{batches_files[1]}')
+    elif len(batches_files) == 1:
+        # If there is only one file, move it to processed and make a copy in merged
+        single_file_path = f'training/batches/{batches_files[0]}'
+        shutil.move(single_file_path, f'training/processed_batches/{batches_files[0]}')
+        shutil.copy(f'training/processed_batches/{batches_files[0]}', 'training/merged_batches/merged_batch.pkl')
+
+if __name__ == "__main__":
+    main()
