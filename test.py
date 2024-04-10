@@ -2,7 +2,7 @@ import unittest
 
 from lib.finish_filing import main as finish_filing
 from lib.create_dictionary import create_dictionary, create_token_dict, remove_scores_and_flatten_predictions
-from lib.merge_epochs import merge
+from lib.merge_batches import merge
 
 class TestFiling(unittest.TestCase):
     def test_basic_input(self):

@@ -73,6 +73,7 @@ async def main(retain=False):
   pbar.update(word_count)
   for i, entry in enumerate(dataset.skip(start_position)):
       if i + start_position < start_position:
+          pbar.display(f"Skipping ahead from {i + start_position} to {start_position}", 1)
           continue  # Skip to the saved position
       text = entry['text']  # Extract text from dataset entry
       words = text.split()
