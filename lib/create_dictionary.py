@@ -212,7 +212,7 @@ def create_dictionary_and_tokenize():
     print("Creating dictionary and tokenizing")
 
     print("Getting merged batch file")
-    with open(f'training/dictionary.pkl', 'wb') as f:
+    with open(f'training/dictionary.pkl', 'rb') as f:
       # Set contents equal to tree_store
       tree_store = pickle.load(f)
 
