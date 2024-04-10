@@ -189,6 +189,8 @@ def merge_and_prune_files(files, threads):
         threads.append(thread7)
         thread6.start()
         thread7.start()
+        for thread in threads:
+          thread.join()
         return merge_and_prune_files(files[2:], threads)
 
     # Merge and prune
@@ -207,6 +209,8 @@ def merge_and_prune_files(files, threads):
     threads.append(thread2)
     thread1.start()
     thread2.start()
+    for thread in threads:
+      thread.join()
     print(f'Merged and pruned {file1_path} and {file2_path} into {merged_filename}.')
 
     # Remove the first two items from the files variable
@@ -218,12 +222,13 @@ def merge_and_prune_files(files, threads):
             thread3 = threading.Thread(target=perform_file_operation, args=(f'training/merged_batches/{file}', f'training/batches_to_process/{file}', 'move'))
             threads.append(thread3)
             thread3.start()
+            thread3.join()
 
         batches_files = sorted(os.listdir('training/batches_to_process'))
         if len(batches_files) > 1:
             merge_and_prune_files(batches_files, threads)
         else:
-          finish_merge()
+            return
           
     else:
         # If there are more batches, run again with the next two files
@@ -242,13 +247,24 @@ def merge_and_prune_files(files, threads):
                 threads.append(thread5)
                 thread5.start()
             batches_files = sorted(os.listdir('training/batches_to_process'))
+
+            for thread in threads:
+                thread.join()
+
             if len(batches_files) > 1:
                 merge_and_prune_files(batches_files, threads)
             else:
-              finish_merge()
+                return
 
 def finish_merge():
     batches_files = sorted(os.listdir('training/batches_to_process'))
+    if len(batches_files) > 1:
+        threads = []
+        merge_and_prune_files(batches_files, threads)
+        for thread in threads:
+            thread.join()
+        finish_merge()
+        
     print(f"Length of batches: {len(batches_files)}")
 
     # Copy the batch file to backup just in case.
@@ -283,7 +299,8 @@ def main():
         threads = []
         merge_and_prune_files(batches_files, threads)
         for thread in threads:
-          thread.join()
+            thread.join()
+        finish_merge()
     elif len(batches_files) == 1:
         finish_merge()
 
