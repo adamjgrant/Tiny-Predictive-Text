@@ -91,10 +91,16 @@ def merge(tree1, tree2):
 
         elif key in tree1:
             # If the key is only in the first tree, copy it
-            merged_tree[key] = tree1[key]
+            if isinstance(tree1[key], dict):
+              merged_tree[key] = tree1.get(key, {})
+            else:
+              merged_tree[key] = tree1[key]
         else:
             # If the key is only in the second tree, copy it
-            merged_tree[key] = tree2[key]
+            if isinstance(tree2[key], dict):
+              merged_tree[key] = tree2.get(key, {})
+            else:
+              merged_tree[key] = tree2[key]
 
     return merged_tree
   
