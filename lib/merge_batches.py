@@ -254,6 +254,9 @@ def finish_merge():
 
     create_dictionary_and_tokenize() 
 
+    # Delete all files in training/processed_batches
+    shutil.rmtree('training/processed_batches', ignore_errors=True)
+
 def main():
     # If training/batches has more than one file, run the function with the first two files
     shutil.rmtree('training/batches_to_process', ignore_errors=True)
