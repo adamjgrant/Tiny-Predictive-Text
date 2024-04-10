@@ -75,20 +75,21 @@ class TestCreateDictionary(unittest.TestCase):
 class TestMergingAndPruningEpochs(unittest.TestCase):      
     def test_merging_epochs(self):
         tree_1 = {
-                   "a": {"score": 0, "a1": {"score": 0, "a2": { "score": 0, "predictions": [["ax", "ay", "az"], ["aalpha", "abeta", "atheta"]]}}},
-                   "b": {"score": 0, "b1": {"score": 0, "b2": { "score": 0, "predictions": [["bx", "by", "bz"], ["balpha", "bbeta", "btheta"]]}}},
+                   "a": {"score": 1, "a1": {"score": 1, "a2": { "score": 1, "predictions": [["ax", "ay", "az"], ["aalpha", "abeta", "atheta"]]}}},
+                   "b": {"score": 1, "b1": {"score": 1, "b2": { "score": 1, "predictions": [["bx", "by", "bz"], ["balpha", "bbeta", "btheta"]]}}},
                  }
         tree_2 = {
-                   "a": {"score": 0, "a1": {"score": 0, "a2": { "score": 0, "predictions": [["ax", "ay", "az"], ["aalpha", "abeta", "atheta"]]}}},
-                   "c": {"score": 0, "c1": {"score": 0, "c2": { "score": 0, "predictions": [["cx", "cy", "cz"], ["calpha", "cbeta", "ctheta"]]}}},
+                   "a": {"score": 1, "a1": {"score": 1, "a2": { "score": 1, "predictions": [["ax", "ay", "az"], ["aalpha", "abeta", "atheta"]]}}},
+                   "c": {"score": 1, "c1": {"score": 1, "c2": { "score": 1, "predictions": [["cx", "cy", "cz"], ["calpha", "cbeta", "ctheta"]]}}},
                  }
         expected_merged_tree = {
-                      "a": {"score": 1, "a1": {"score": 1, "a2": { "score": 1, "predictions": [["ax", "ay", "az"], ["aalpha", "abeta", "atheta"]]}}},
-                      "b": {"score": 0, "b1": {"score": 0, "b2": { "score": 0, "predictions": [["bx", "by", "bz"], ["balpha", "bbeta", "btheta"]]}}},
-                      "c": {"score": 0, "c1": {"score": 0, "c2": { "score": 0, "predictions": [["cx", "cy", "cz"], ["calpha", "cbeta", "ctheta"]]}}},
+                      "a": {"score": 2, "a1": {"score": 2, "a2": { "score": 2, "predictions": [["ax", "ay", "az"], ["aalpha", "abeta", "atheta"]]}}},
+                      "b": {"score": 1, "b1": {"score": 1, "b2": { "score": 1, "predictions": [["bx", "by", "bz"], ["balpha", "bbeta", "btheta"]]}}},
+                      "c": {"score": 1, "c1": {"score": 1, "c2": { "score": 1, "predictions": [["cx", "cy", "cz"], ["calpha", "cbeta", "ctheta"]]}}},
         }
         actual_merged_tree = merge(tree_1, tree_2)
 
+        self.maxDiff = None
         self.assertEqual(actual_merged_tree, expected_merged_tree)
 
 if __name__ == '__main__':

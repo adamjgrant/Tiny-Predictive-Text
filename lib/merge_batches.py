@@ -48,11 +48,11 @@ def merge(tree1, tree2):
         if key in tree1 and key in tree2:
             # If the key is in both trees, merge deeper
             merged_tree[key] = merge(tree1[key], tree2[key])
+            
+            # If tree1 is a dict
+            if isinstance(tree1[key], dict):
+                merged_tree[key]['score'] = tree1[key].get('score', 0) + tree2[key].get('score', 0)
 
-            # Special handling for predictions: if duplicate, increment score
-            if key == "predictions" and tree1[key] == tree2[key]:
-                # Assuming parent of predictions has a 'score' key
-                merged_tree['score'] = tree1['score'] + 1
         elif key in tree1:
             # If the key is only in the first tree, copy it
             merged_tree[key] = tree1[key]
