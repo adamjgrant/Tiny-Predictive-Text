@@ -1,7 +1,7 @@
 import os
 import shutil
 import pickle
-from constants import TARGET_DICTIONARY_COUNT, MAX_PREDICTIONS, SUBBRANCH_PRUNE_SIZE
+from .constants import TARGET_DICTIONARY_COUNT, MAX_PREDICTIONS, SUBBRANCH_PRUNE_SIZE
 
 # Ensure the directories exist
 os.makedirs('training/merged_batches', exist_ok=True)
@@ -101,8 +101,7 @@ def prune(merged_content, target_dict_size=TARGET_DICTIONARY_COUNT):
             if score_present:
                 pruned_subtree["score"] = subtree["score"]  # Directly use the value from original subtree
             
-            if predictions:  # Check if there's something to re-insert
-              # This section seems correct; ensure MAX_PREDICTIONS is defined or handled appropriately
+            if predictions:  
               sorted_predictions = sorted(predictions, key=lambda x: x['score'], reverse=True)[:MAX_PREDICTIONS]
               pruned_subtree["predictions"] = sorted_predictions
 

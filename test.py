@@ -2,7 +2,7 @@ import unittest
 
 from lib.finish_filing import main as finish_filing
 from lib.create_dictionary import create_dictionary, create_token_dict, remove_scores_and_flatten_predictions
-from lib.merge_batches import merge
+from lib.merge_batches import merge, prune
 
 class TestFiling(unittest.TestCase):
     def test_basic_input(self):
@@ -73,24 +73,39 @@ class TestCreateDictionary(unittest.TestCase):
       self.assertEqual(actual_tokenized_tree, expected_tokenized_tree)
 
 class TestMergingAndPruningEpochs(unittest.TestCase):      
-    def test_merging_epochs(self):
+    def test_merging_batches(self):
         tree_1 = {
-                   "a": {"score": 1, "a1": {"score": 1, "a2": { "score": 1, "predictions": [["ax", "ay", "az"], ["aalpha", "abeta", "atheta"]]}}},
-                   "b": {"score": 1, "b1": {"score": 1, "b2": { "score": 1, "predictions": [["bx", "by", "bz"], ["balpha", "bbeta", "btheta"]]}}},
+                    "a": {"score": 1, "a1": {"score": 1, "a2": { "score": 1, "predictions": [{ "prediction": ["ax", "ay", "az"], "score": 1 }, { "prediction": ["aalpha", "abeta", "atheta"], "score": 1 }]}}},
+                    "b": {"score": 1, "b1": {"score": 1, "b2": { "score": 1, "predictions": [{ "prediction": ["bx", "by", "bz"], "score": 1 }, { "prediction": ["balpha", "bbeta", "btheta"], "score": 1 }]}}},
                  }
         tree_2 = {
-                   "a": {"score": 1, "a1": {"score": 1, "a2": { "score": 1, "predictions": [["ax", "ay", "az"], ["aalpha", "abeta", "atheta"]]}}},
-                   "c": {"score": 1, "c1": {"score": 1, "c2": { "score": 1, "predictions": [["cx", "cy", "cz"], ["calpha", "cbeta", "ctheta"]]}}},
+                    "a": {"score": 1, "a1": {"score": 1, "a2": { "score": 1, "predictions": [{ "prediction": ["ax", "ay", "az"], "score": 1 }, { "prediction": ["aalpha", "abeta", "atheta"], "score": 1 }]}}},
+                    "c": {"score": 1, "c1": {"score": 1, "c2": { "score": 1, "predictions": [{ "prediction": ["cx", "cy", "cz"], "score": 1 }, { "prediction": ["calpha", "cbeta", "ctheta"], "score": 1 }]}}},
                  }
         expected_merged_tree = {
-                      "a": {"score": 2, "a1": {"score": 2, "a2": { "score": 2, "predictions": [["ax", "ay", "az"], ["aalpha", "abeta", "atheta"]]}}},
-                      "b": {"score": 1, "b1": {"score": 1, "b2": { "score": 1, "predictions": [["bx", "by", "bz"], ["balpha", "bbeta", "btheta"]]}}},
-                      "c": {"score": 1, "c1": {"score": 1, "c2": { "score": 1, "predictions": [["cx", "cy", "cz"], ["calpha", "cbeta", "ctheta"]]}}},
+                    "a": {"score": 2, "a1": {"score": 2, "a2": { "score": 2, "predictions": [{ "prediction": ["ax", "ay", "az"], "score": 2 }, { "prediction": ["aalpha", "abeta", "atheta"], "score": 2 }]}}},
+                    "b": {"score": 1, "b1": {"score": 1, "b2": { "score": 1, "predictions": [{ "prediction": ["bx", "by", "bz"], "score": 1 }, { "prediction": ["balpha", "bbeta", "btheta"], "score": 1 }]}}},
+                    "c": {"score": 1, "c1": {"score": 1, "c2": { "score": 1, "predictions": [{ "prediction": ["cx", "cy", "cz"], "score": 1 }, { "prediction": ["calpha", "cbeta", "ctheta"], "score": 1 }]}}},
         }
         actual_merged_tree = merge(tree_1, tree_2)
 
         self.maxDiff = None
         self.assertEqual(actual_merged_tree, expected_merged_tree)
+
+    def test_pruning_merged_tree(self):
+        tree_1 = {
+                    "a": {"score": 2, "a1": {"score": 2, "a2": { "score": 2, "predictions": [{ "prediction": ["ax", "ay", "az"], "score": 2 }, { "prediction": ["aalpha", "abeta", "atheta"], "score": 1 }]}}},
+                    "b": {"score": 1, "b1": {"score": 1, "b2": { "score": 1, "predictions": [{ "prediction": ["bx", "by", "bz"], "score": 1 }, { "prediction": ["balpha", "bbeta", "btheta"], "score": 1 }]}}},
+                    "c": {"score": 1, "c1": {"score": 1, "c2": { "score": 1, "predictions": [{ "prediction": ["cx", "cy", "cz"], "score": 1 }, { "prediction": ["calpha", "cbeta", "ctheta"], "score": 1 }]}}},
+        }
+
+        expected_pruned_tree = {
+                    "a": {"score": 2, "a1": {"score": 2, "a2": { "score": 2, "predictions": [{ "prediction": ["ax", "ay", "az"], "score": 1 }, { "prediction": ["aalpha", "abeta", "atheta"], "score": 1 }]}}}
+        }
+
+        actual_pruned_tree = prune(tree_1, 1)
+        
+        self.assertEqual(actual_pruned_tree, expected_pruned_tree)
 
 if __name__ == '__main__':
     unittest.main()
