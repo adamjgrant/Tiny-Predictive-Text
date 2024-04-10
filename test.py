@@ -94,13 +94,13 @@ class TestMergingAndPruningEpochs(unittest.TestCase):
 
     def test_pruning_merged_tree(self):
         tree_1 = {
-                    "a": {"score": 2, "a1": {"score": 2, "a2": { "score": 2, "predictions": [{ "prediction": ["ax", "ay", "az"], "score": 2 }, { "prediction": ["aalpha", "abeta", "atheta"], "score": 1 }]}}},
+                    "a": {"score": 2, "a1": {"score": 2, "a2": { "score": 2, "predictions": [{ "prediction": ["ax", "ay", "az"], "score": 2 }, { "prediction": ["aalpha", "abeta", "atheta"], "score": 2 }]}}},
                     "b": {"score": 1, "b1": {"score": 1, "b2": { "score": 1, "predictions": [{ "prediction": ["bx", "by", "bz"], "score": 1 }, { "prediction": ["balpha", "bbeta", "btheta"], "score": 1 }]}}},
                     "c": {"score": 1, "c1": {"score": 1, "c2": { "score": 1, "predictions": [{ "prediction": ["cx", "cy", "cz"], "score": 1 }, { "prediction": ["calpha", "cbeta", "ctheta"], "score": 1 }]}}},
         }
 
         expected_pruned_tree = {
-                    "a": {"score": 2, "a1": {"score": 2, "a2": { "score": 2, "predictions": [{ "prediction": ["ax", "ay", "az"], "score": 1 }, { "prediction": ["aalpha", "abeta", "atheta"], "score": 1 }]}}}
+                    "a": {"score": 2, "a1": {"score": 2, "a2": { "score": 2, "predictions": [{ "prediction": ["ax", "ay", "az"], "score": 2 }, { "prediction": ["aalpha", "abeta", "atheta"], "score": 2 }]}}}
         }
 
         actual_pruned_tree = prune(tree_1, 1)
