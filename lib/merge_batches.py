@@ -2,6 +2,14 @@ import os
 import shutil
 import pickle
 from .constants import TARGET_DICTIONARY_COUNT, MAX_PREDICTIONS, SUBBRANCH_PRUNE_SIZE
+# PRUNE_FREQUENCY = 4 * 1000 * 1000 # Every this many words
+# TARGET_DICTIONARY_COUNT = 100
+
+# # Total number of words in the dataset acc to https://huggingface.co/datasets/oscar-corpus/OSCAR-2201
+# TOTAL_WORD_COUNT = 377376402775  
+
+# SUBBRANCH_PRUNE_SIZE = 20
+# MAX_PREDICTIONS = 3
 
 # Ensure the directories exist
 os.makedirs('training/merged_batches', exist_ok=True)
@@ -31,6 +39,27 @@ def increase_scores(node):
         if isinstance(value, dict):
             increase_scores(value)
 
+def merge_predictions(tree1, tree2):
+    """
+    Merge two lists of predictions, increasing scores for duplicate predictions.
+    """
+    # Create a dict to store the merged predictions
+    merged_predictions = {}
+    for prediction in tree1 + tree2:
+        # Get the prediction string
+        prediction_str = ' '.join(prediction['prediction'])
+        # If the prediction is already in the merged dict, increase the score
+        if prediction_str in merged_predictions:
+            merged_predictions[prediction_str]['score'] += 1
+        else:
+            merged_predictions[prediction_str] = prediction
+
+    # Sort the merged predictions by score
+    sorted_predictions = sorted(merged_predictions.values(), key=lambda x: x['score'], reverse=True)
+
+    # Return only the top MAX_PREDICTIONS predictions
+    return sorted_predictions[:MAX_PREDICTIONS]
+
 def merge(tree1, tree2):
     """
     Merge two prediction trees, increasing scores for duplicate predictions.
@@ -53,6 +82,9 @@ def merge(tree1, tree2):
             # If tree1 is a dict
             if isinstance(tree1[key], dict):
                 merged_tree[key]['score'] = tree1[key].get('score', 0) + tree2[key].get('score', 0)
+
+            elif key == 'predictions':
+              merged_tree[key] = merge_predictions(tree1[key], tree2[key])
 
         elif key in tree1:
             # If the key is only in the first tree, copy it
