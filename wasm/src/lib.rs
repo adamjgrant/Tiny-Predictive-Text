@@ -90,6 +90,7 @@ struct PredictiveTextContext {
     anchor_token: i32,
     first_level_context: String,
     second_level_context: String,
+    quality: i32,  // Combined quality of match for first and second level contexts
     prediction: Vec<String>,
 }
 
@@ -169,6 +170,7 @@ fn process_input(input: &str) -> PredictiveTextContext {
           anchor_token,
           first_level_context,
           second_level_context,
+          quality: 0,
           prediction: Vec::<String>::new(), // Empty initially, to be filled later
       }
   } else {
@@ -178,12 +180,13 @@ fn process_input(input: &str) -> PredictiveTextContext {
           anchor_token: -1,
           first_level_context: String::new(),
           second_level_context: String::new(),
+          quality: 0,
           prediction: Vec::<String>::new(),
       }
   }
 }
 
-fn filter_dictionary_on_anchor(processed_input: &PredictiveTextContext) -> (PredictiveTextContext, Option<Node>) {
+fn filter_dictionary_on_anchor(processed_input: &PredictiveTextContext) -> (PredictiveTextContext, Option<Node>, i32) {
   // Directly access the global dictionary here, assuming it's properly loaded and of the correct type.
   let global_dict = GLOBAL_DICTIONARY.lock().unwrap();
   
@@ -192,59 +195,72 @@ fn filter_dictionary_on_anchor(processed_input: &PredictiveTextContext) -> (Pred
       .and_then(|dict| dict.get(&processed_input.anchor_token))
       .cloned(); // Clone the Node if found.
 
+  let anchor_quality = if filtered_data.is_some() { 50 } else { 0 }; // Set anchor_quality based on whether filtered_data is Some or None
+
   let updated_context = processed_input.clone();
 
-  (updated_context, filtered_data)
+  (updated_context, filtered_data, anchor_quality)
+}
+
+// Calculates quality based on the best match's Levenshtein distance
+fn calculate_quality(best_distance: usize, max_distance: usize) -> i32 {
+  (100 * (1 - best_distance as i32 / max_distance as i32).max(0).min(1) as i32) / 2  // divides the score by 2 to scale to 50
 }
 
 fn match_x_level_context(
   x_level_context: &str,
   filtered_dict: &Node,
   dict_token_to_string: &HashMap<String, i32>,
-) -> Option<Node> {
-    if let Node::Map(sub_map) = filtered_dict {
-        let mut closest_match: Option<(&Node, usize)> = None;
+  max_distance: usize,
+) -> (Option<Node>, i32) {
+  if let Node::Map(sub_map) = filtered_dict {
+      let mut closest_match: Option<(&Node, usize)> = None;
 
-        for (&key, value) in sub_map {
-            if let Some(key_str) = dict_token_to_string.iter().find_map(|(s, &k)| if k == key { Some(s) } else { None }) {
-                let distance = levenshtein(x_level_context, key_str);
+      for (&key, value) in sub_map {
+          if let Some(key_str) = dict_token_to_string.iter().find_map(|(s, &k)| if k == key { Some(s) } else { None }) {
+              let distance = levenshtein(x_level_context, key_str);
+              match closest_match {
+                  None => closest_match = Some((value, distance)),
+                  Some((_, prev_distance)) if distance < prev_distance => closest_match = Some((value, distance)),
+                  _ => (),
+              }
+          }
+      }
 
-                match closest_match {
-                    None => closest_match = Some((value, distance)),
-                    Some((_, prev_distance)) if distance < prev_distance => closest_match = Some((value, distance)),
-                    _ => (),
-                }
-            }
-        }
-
-        closest_match.map(|(node, _)| node.clone())
-    } else {
-        None
-    }
+      if let Some((node, best_distance)) = closest_match {
+          let quality = calculate_quality(best_distance, max_distance);
+          (Some(node.clone()), quality)
+      } else {
+          (None, 0)
+      }
+  } else {
+      (None, 0)
+  }
 }
 
 fn filter_on_x_level_context(
   processed_input: &PredictiveTextContext,
   filtered_dictionary: &Node,
-) -> (PredictiveTextContext, Option<Node>) {
+  max_distance: usize,
+) -> (PredictiveTextContext, Option<Node>, i32) {
   // Access the global inverted token dictionary to convert token IDs to strings
   let dict_lock = INVERTED_TOKEN_DICT.lock().unwrap();
 
   if let Node::Map(_sub_map) = filtered_dictionary {
       let first_level_context = &processed_input.first_level_context;
 
-      let context_filtered_node = match_x_level_context(
+      let (context_filtered_node, quality) = match_x_level_context(
           first_level_context,
           filtered_dictionary,
-          &dict_lock // Pass reference directly without cloning
+          &dict_lock, // Pass reference directly without cloning
+          max_distance,
       );
-      // web_sys::console::log_1(&to_value(&context_filtered_node).unwrap_or_else(|_| JsValue::UNDEFINED));
 
       let updated_context = processed_input.clone(); // Clone processed_input to create a potentially updated context
-      (updated_context, context_filtered_node) // Return both the updated context and the node
+      (updated_context, context_filtered_node, quality) // Return the updated context, node, and quality
   } else {
       // Return empty context if no anchor filtered dictionary is available
-      (processed_input.clone(), None)
+      (processed_input.clone(), None, 0)
   }
 }
 
@@ -281,50 +297,36 @@ fn extract_predictions(filtered_node: Option<Node>) -> Vec<String> {
   }
 }
 
-
 #[wasm_bindgen]
-pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
-  let processed_input = process_input(input);
+pub fn get_predictive_text(input: &str, max_distance: usize) -> Result<JsValue, JsValue> {
+    let processed_input = process_input(input);
 
-  // Filter on the anchor token
-  let (updated_context_after_filtering_anchor, anchor_filtered_dictionary) = filter_dictionary_on_anchor(&processed_input);
+    let (updated_context_after_filtering_anchor, anchor_filtered_dictionary, anchor_quality) = filter_dictionary_on_anchor(&processed_input);
 
-  //web_sys::console::log_1(&"Anchor filtered dictionary:".into());
-  //web_sys::console::log_1(&to_value(&anchor_filtered_dictionary).unwrap_or(JsValue::UNDEFINED));
+    let mut final_quality = anchor_quality;
 
-  // Check if a Node was returned; if not, return the processed_input as is
-  if let Some(anchor_dict) = anchor_filtered_dictionary {
-      // If we do have an anchor dictionary, proceed with further filtering
+    if let Some(anchor_dict) = anchor_filtered_dictionary {
+        let (updated_context_after_filtering_first_level_context, first_level_context_filtered_dictionary, first_level_quality) = filter_on_x_level_context(&updated_context_after_filtering_anchor, &anchor_dict, max_distance);
 
-      // Filtering based on the first level context
-      let (updated_context_after_filtering_first_level_context, first_level_context_filtered_dictionary) = filter_on_x_level_context(&updated_context_after_filtering_anchor, &anchor_dict);
+        final_quality += first_level_quality;
 
-      // Filtering based on the second level context, if there was a dictionary from the first level filtering
-      if let Some(first_level_dict) = first_level_context_filtered_dictionary {
-          let (mut final_context, second_level_context_filtered_dictionary) = filter_on_x_level_context(&updated_context_after_filtering_first_level_context, &first_level_dict);
+        if let Some(first_level_dict) = first_level_context_filtered_dictionary {
+            let (mut final_context, second_level_context_filtered_dictionary, second_level_quality) = filter_on_x_level_context(&updated_context_after_filtering_first_level_context, &first_level_dict, max_distance);
 
-          // Log the second level context filtered dictionary
-          // web_sys::console::log_1(&"Second level context filtered dictionary:".into());
-          // web_sys::console::log_1(&to_value(&second_level_context_filtered_dictionary).unwrap_or_else(|_| JsValue::UNDEFINED));
+            final_quality += second_level_quality;
+            let predictions = extract_predictions(second_level_context_filtered_dictionary);
 
-          // Extract predictions
-          let predictions = extract_predictions(second_level_context_filtered_dictionary);
+            final_context.quality = final_quality;
+            final_context.prediction = predictions;
 
-          // web_sys::console::log_1(&"Predictions:".into());
-          // web_sys::console::log_1(&to_value(&predictions).unwrap_or_else(|_| JsValue::UNDEFINED));
-          
-          // Set the predictions key on final_context to `predictions`
-          final_context.prediction = predictions; // Assigning the predictions directly to the `prediction` field
+            return to_value(&final_context).map_err(|e| e.into());
+        }
+    }
 
-          // Serialize and return the final context after all filtering
-          return to_value(&final_context).map_err(|e| e.into());
-      }
-  }
-
-  // Fallback: Serialize and return the initial or latest context available
-  to_value(&updated_context_after_filtering_anchor).map_err(|e| e.into())
+    let mut fallback_context = updated_context_after_filtering_anchor;
+    fallback_context.quality = final_quality;
+    to_value(&fallback_context).map_err(|e| e.into())
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
