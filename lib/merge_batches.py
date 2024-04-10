@@ -179,10 +179,27 @@ def merge_and_prune_files(file1_path, file2_path):
         # Move everything from merged to batches if no more files are left in batches 
         for file in os.listdir('training/merged_batches'):
             shutil.move(f'training/merged_batches/{file}', f'training/batches/{file}')
+
+        batches_files = sorted(os.listdir('training/batches'))
+        if len(batches_files) > 1:
+            merge_and_prune_files(f'training/batches/{batches_files[0]}', f'training/batches/{batches_files[1]}')
+        else:
+            print(f"Length of batches: {len(batches_files)}")
     else:
         # If there are more batches, run again with the next two files
         if len(remaining_files) > 1:
             merge_and_prune_files('training/batches/' + remaining_files[0], 'training/batches/' + remaining_files[1])
+
+        if len(remaining_files) == 1:
+            # If there is only one file, move it to merged_batches
+            shutil.move(f'training/batches/{remaining_files[0]}', f'training/merged_batches/{remaining_files[0]}')
+            for file in os.listdir('training/merged_batches'):
+                shutil.move(f'training/merged_batches/{file}', f'training/batches/{file}')
+            batches_files = sorted(os.listdir('training/batches'))
+            if len(batches_files) > 1:
+                merge_and_prune_files(f'training/batches/{batches_files[0]}', f'training/batches/{batches_files[1]}')
+            else:
+                print(f"Length of batches: {len(batches_files)}")
 
 def main():
     # If training/batches has more than one file, run the function with the first two files
