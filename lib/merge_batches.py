@@ -1,7 +1,9 @@
 import os
 import shutil
 import pickle
+import threading
 from .constants import TARGET_DICTIONARY_COUNT, MAX_PREDICTIONS, SUBBRANCH_PRUNE_SIZE
+from .create_dictionary import create_dictionary
 # PRUNE_FREQUENCY = 4 * 1000 * 1000 # Every this many words
 # TARGET_DICTIONARY_COUNT = 100
 
@@ -154,7 +156,20 @@ def prune(merged_content, target_dict_size=TARGET_DICTIONARY_COUNT):
 
     return top_pruned_tree 
 
-def merge_and_prune_files(file1_path, file2_path):
+def perform_file_operation(src, dst, operation='move'):
+    try:
+        if operation == 'move':
+            shutil.move(src, dst)
+        elif operation == 'copy':
+            shutil.copy2(src, dst)
+        print(f"Operation {operation} completed for: {src} to {dst}")
+    except Exception as e:
+        print(f"Error performing {operation} from {src} to {dst}: {e}")
+
+def merge_and_prune_files(files, threads):
+    file1_path = f'training/batches_to_process/{files[0]}'
+    file2_path = f'training/batches_to_process/{files[1]}'
+
     # Get the contents of each file
     with open(file1_path, 'rb') as f1, open(file2_path, 'rb') as f2:
         content1 = pickle.load(f1)
@@ -170,55 +185,86 @@ def merge_and_prune_files(file1_path, file2_path):
         pickle.dump(pruned_content, f)
 
     # Move the two files into training/processed_batches
-    shutil.move(file1_path, f'training/processed_batches/{os.path.basename(file1_path)}')
-    shutil.move(file2_path, f'training/processed_batches/{os.path.basename(file2_path)}')
+    thread1 = threading.Thread(target=perform_file_operation, args=(file1_path, f'training/processed_batches/{os.path.basename(file1_path)}', 'move'))
+    thread2 = threading.Thread(target=perform_file_operation, args=(file2_path, f'training/processed_batches/{os.path.basename(file2_path)}', 'move'))
+    threads.append(thread1)
+    threads.append(thread2)
+    thread1.start()
+    thread2.start()
     print(f'Merged and pruned {file1_path} and {file2_path} into {merged_filename}.')
 
-    # Check for remaining files and act accordingly
-    remaining_files = os.listdir('training/batches')
+    # Remove the first two items from the files variable
+    remaining_files = files[2:]
+
     if not remaining_files:
         # Move everything from merged to batches if no more files are left in batches 
         for file in os.listdir('training/merged_batches'):
-            shutil.move(f'training/merged_batches/{file}', f'training/batches/{file}')
+            thread3 = threading.Thread(target=perform_file_operation, args=(f'training/merged_batches/{file}', f'training/batches_to_process/{file}', 'move'))
+            threads.append(thread3)
+            thread3.start()
 
-        batches_files = sorted(os.listdir('training/batches'))
+        batches_files = sorted(os.listdir('training/batches_to_process'))
         if len(batches_files) > 1:
-            merge_and_prune_files(f'training/batches/{batches_files[0]}', f'training/batches/{batches_files[1]}')
+            merge_and_prune_files(batches_files, threads)
         else:
           finish_merge()
           
     else:
         # If there are more batches, run again with the next two files
         if len(remaining_files) > 1:
-            merge_and_prune_files('training/batches/' + remaining_files[0], 'training/batches/' + remaining_files[1])
+            # Remove the first two items from the files variable
+            merge_and_prune_files(remaining_files, threads)
 
         if len(remaining_files) == 1:
             # If there is only one file, move it to merged_batches
-            shutil.move(f'training/batches/{remaining_files[0]}', f'training/merged_batches/{remaining_files[0]}')
+            thread4 = threading.Thread(target=perform_file_operation, args=(f'training/batches_to_process/{remaining_files[0]}', f'training/merged_batches/{remaining_files[0]}', 'move'))
+            threads.append(thread4)
+            thread4.start()
+
             for file in os.listdir('training/merged_batches'):
-                shutil.move(f'training/merged_batches/{file}', f'training/batches/{file}')
-            batches_files = sorted(os.listdir('training/batches'))
+                thread5 = threading.Thread(target=perform_file_operation, args=(f'training/merged_batches/{file}', f'training/batches_to_process/{file}', 'move'))
+                threads.append(thread5)
+                thread5.start()
+            batches_files = sorted(os.listdir('training/batches_to_process'))
             if len(batches_files) > 1:
-                merge_and_prune_files(f'training/batches/{batches_files[0]}', f'training/batches/{batches_files[1]}')
+                merge_and_prune_files(batches_files, threads)
             else:
               finish_merge()
 
 def finish_merge():
-    batches_files = sorted(os.listdir('training/batches'))
+    batches_files = sorted(os.listdir('training/batches_to_process'))
     print(f"Length of batches: {len(batches_files)}")
 
     # Copy the batch file to backup just in case.
-    shutil.copy(f'training/batches/{batches_files[0]}', 'backup/tree.pkl')
+    shutil.copy(f'training/batches_to_process/{batches_files[0]}', 'backup/dictionary.pkl')
     shutil.copy(f'training/processing_progress.txt', 'backup/processing_progress.txt')
 
     # Rename the first batch file to dictionary.pkl
-    shutil.move(f'training/batches/{batches_files[0]}', 'training/dictionary.pkl')
+    shutil.move(f'training/batches_to_process/{batches_files[0]}', 'training/dictionary.pkl')
+
+    create_dictionary() 
 
 def main():
     # If training/batches has more than one file, run the function with the first two files
-    batches_files = sorted(os.listdir('training/batches'))
+    shutil.rmtree('training/batches_to_process', ignore_errors=True)
+    os.makedirs('training/batches_to_process', exist_ok=True)
+    threads = []
+
+    for file in os.listdir('training/batches'):
+        thread = threading.Thread(target=perform_file_operation, args=(f'training/batches/{file}', f'training/batches_to_process/{file}', 'copy'))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    batches_files = sorted(os.listdir('training/batches_to_process'))
+
     if len(batches_files) > 1:
-        merge_and_prune_files(f'training/batches/{batches_files[0]}', f'training/batches/{batches_files[1]}')
+        threads = []
+        merge_and_prune_files(batches_files, threads)
+        for thread in threads:
+          thread.join()
     elif len(batches_files) == 1:
         finish_merge()
 
