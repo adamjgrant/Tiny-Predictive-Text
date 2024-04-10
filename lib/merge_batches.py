@@ -171,9 +171,19 @@ def merge_and_prune_files(files, threads):
     file2_path = f'training/batches_to_process/{files[1]}'
 
     # Get the contents of each file
-    with open(file1_path, 'rb') as f1, open(file2_path, 'rb') as f2:
-        content1 = pickle.load(f1)
-        content2 = pickle.load(f2)
+    try:
+        with open(file1_path, 'rb') as f1, open(file2_path, 'rb') as f2:
+            content1 = pickle.load(f1)
+            content2 = pickle.load(f2)
+    except pickle.UnpicklingError as e:
+        print(f"Error unpickling the files: {e}")
+        thread6 = threading.Thread(target=perform_file_operation, args=(file1_path, f'training/processed_batches/{os.path.basename(file1_path)}', 'move'))
+        thread7 = threading.Thread(target=perform_file_operation, args=(file2_path, f'training/processed_batches/{os.path.basename(file2_path)}', 'move'))
+        threads.append(thread6)
+        threads.append(thread7)
+        thread6.start()
+        thread7.start()
+        return merge_and_prune_files(files[2:], threads)
 
     # Merge and prune
     merged_content = merge(content1, content2)
