@@ -14,6 +14,7 @@ from .constants import TARGET_DICTIONARY_COUNT, MAX_PREDICTIONS, SUBBRANCH_PRUNE
 # Ensure the directories exist
 os.makedirs('training/merged_batches', exist_ok=True)
 os.makedirs('training/processed_batches', exist_ok=True)
+os.makedirs('backup', exist_ok=True)
 
 def merge_dicts(dict1, dict2):
     """
@@ -184,7 +185,8 @@ def merge_and_prune_files(file1_path, file2_path):
         if len(batches_files) > 1:
             merge_and_prune_files(f'training/batches/{batches_files[0]}', f'training/batches/{batches_files[1]}')
         else:
-            print(f"Length of batches: {len(batches_files)}")
+          finish_merge()
+          
     else:
         # If there are more batches, run again with the next two files
         if len(remaining_files) > 1:
@@ -199,7 +201,18 @@ def merge_and_prune_files(file1_path, file2_path):
             if len(batches_files) > 1:
                 merge_and_prune_files(f'training/batches/{batches_files[0]}', f'training/batches/{batches_files[1]}')
             else:
-                print(f"Length of batches: {len(batches_files)}")
+              finish_merge()
+
+def finish_merge():
+    batches_files = sorted(os.listdir('training/batches'))
+    print(f"Length of batches: {len(batches_files)}")
+
+    # Copy the batch file to backup just in case.
+    shutil.copy(f'training/batches/{batches_files[0]}', 'backup/tree.pkl')
+    shutil.copy(f'training/processing_progress.txt', 'backup/processing_progress.txt')
+
+    # Rename the first batch file to dictionary.pkl
+    shutil.move(f'training/batches/{batches_files[0]}', 'training/dictionary.pkl')
 
 def main():
     # If training/batches has more than one file, run the function with the first two files
@@ -207,10 +220,7 @@ def main():
     if len(batches_files) > 1:
         merge_and_prune_files(f'training/batches/{batches_files[0]}', f'training/batches/{batches_files[1]}')
     elif len(batches_files) == 1:
-        # If there is only one file, move it to processed and make a copy in merged
-        single_file_path = f'training/batches/{batches_files[0]}'
-        shutil.move(single_file_path, f'training/processed_batches/{batches_files[0]}')
-        shutil.copy(f'training/processed_batches/{batches_files[0]}', 'training/merged_batches/merged_batch.pkl')
+        finish_merge()
 
 if __name__ == "__main__":
     main()

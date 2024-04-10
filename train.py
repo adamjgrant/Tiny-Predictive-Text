@@ -9,7 +9,7 @@ import logging
 from lib.process_predictive_words import main as process_predictive_words
 from lib.process_context_words import main as process_context_words
 from lib.finish_filing import main as finish_filing
-from lib.create_dictionary import create_dictionary_and_tokenize
+from lib.create_dictionary import create_batch
 import asyncio
 import gc
 from lib.constants import PRUNE_FREQUENCY, TARGET_DICTIONARY_COUNT, TOTAL_WORD_COUNT
@@ -37,7 +37,7 @@ async def save_position(progress_file, current_position, word_count, tree_store)
       f.write(f"{str(current_position)},{str(word_count)}")
 
   print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
-  await create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
+  await create_batch(tree_store, TARGET_DICTIONARY_COUNT)
   return DEFAULT_TREE_STORE
 
 async def main(retain=False):
@@ -104,7 +104,7 @@ async def main(retain=False):
               tree_store = await save_position('training/processing_progress.txt', i + start_position + 1, word_count, tree_store)
               gc.collect()
             
-  await create_dictionary_and_tokenize(tree_store, TARGET_DICTIONARY_COUNT)
+  await create_batch(tree_store, TARGET_DICTIONARY_COUNT)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Training script with position retain functionality.')

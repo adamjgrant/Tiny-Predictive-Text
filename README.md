@@ -43,11 +43,28 @@ No GPUs OS requirements or nVidia libraries needed. I run this on my Macbook Pro
 
 - `pip install .`
 - `huggingface-cli login`
-- Run the training with `python train.py`. Every once in a while it will optimize by pruning word set dictionaries and branches recursively. At this point (look for it in the logs) it will create the dictionary.js file the demo needs to run. Let it keep running and it will continuously improve that dictionary as it continues its training.
+
+then 
+
+`python train.py --retain`
+
+To begin the training. Every once in a while it will optimize by pruning word set dictionaries and branches recursively. At this point (look for it in the logs) it will create a new batch file in /training/batches. It does this so the script can be restarted and it can pick up where it left off. Making separate batches also prevents the script from locking up.
 
 ### Merging batches
 
+Once enough batches are created, merge them with
+
 `python -m lib.merge_batches`
+
+This will take two batches at a time, merging them into one in training/merged_batches. It will then move the originals into training/processed_batches.
+
+After it has gone through and merged couples, it will put all the merged batches back into training/batches and continue this process again until it is left with only one single merged batch.
+
+### Creating the dictionary
+
+With the single merged batch, it's time to optimize this further and get it ready for the web environment by converting it to msgpack.
+
+`python -m lib.create_dictionary`
 
 ## WASM Development
 

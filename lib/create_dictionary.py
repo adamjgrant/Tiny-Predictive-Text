@@ -4,7 +4,7 @@ import logging
 import pickle
 import datetime
 import os
-from lib.constants import MAX_PREDICTIONS, SUBBRANCH_PRUNE_SIZE
+from lib.constants import MAX_PREDICTIONS, SUBBRANCH_PRUNE_SIZE 
 
 # Setup basic configuration for logging
 logging.basicConfig(level=logging.DEBUG)
@@ -184,7 +184,7 @@ def save_test_dict_files():
   with open('tokens-test.msgpack', 'wb') as dict_file:  # Note the 'wb' mode for binary writing
     msgpack.dump(token_dict, dict_file)
   
-async def create_dictionary_and_tokenize(tree_store, target_dict_size):
+async def create_batch(tree_store, target_dict_size):
     global token_dict
     print("\n")
     print("Creating dictionary and tokenizing")
@@ -206,11 +206,19 @@ async def create_dictionary_and_tokenize(tree_store, target_dict_size):
 
     print(f"💾 New batch {batch_filename} Saved.")
 
-    # TODO: These should migrate to the batch consolidation steps.
-    # Remove score values and other complications we don't need in the final dict.
+def create_dictionary_and_tokenize():
+    global token_dict
+    print("\n")
+    print("Creating dictionary and tokenizing")
+
+    print("Getting merged batch file")
+    with open(f'training/dictionary.pkl', 'wb') as f:
+      # Set contents equal to tree_store
+      tree_store = pickle.load(f)
+
     print("Simplifying")
     # Allow the running program to keep working on the unsimplified and untokenized tree.
-    simplified_pruned_tree = remove_scores_and_flatten_predictions(copy.deepcopy(pruned_tree))
+    simplified_pruned_tree = remove_scores_and_flatten_predictions(tree_store)
 
     # Then, create a token dictionary and update the tree in-place
     print("Tokenizing")
@@ -223,3 +231,6 @@ async def create_dictionary_and_tokenize(tree_store, target_dict_size):
     save_test_dict_files()
 
     print("Finished creating dictionary and tokenization")
+
+if __name__ == "__main__":
+    create_dictionary_and_tokenize()
