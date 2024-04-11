@@ -1,7 +1,5 @@
 wasm/target
 training
-dictionary.msgpack
-tokens.msgpack
 dictionary.js
 dictionary.json
 dictionary-test.msgpack
