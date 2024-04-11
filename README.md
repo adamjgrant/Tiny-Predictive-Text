@@ -5,37 +5,52 @@ A demonstration of predictive text without an LLM, using permy.link
 
 ## Quickstart
 
-Add Tiny predict to your HTML.
+1. Include all of the files in [the dist directory](https://github.com/adamjgrant/Tiny-Predictive-Text/tree/main/dist) in the root of your project.
+
+2. Add Tiny predict to your HTML.
 
 ```html
-  <script src="tiny-predict.min.js"></script>
-  <script>
-    import { Predict, PredictionState } from "tiny-predict.min.js";
-    // Rest of code
-  </script>
-</body>
+<script type="module" src="tiny-predict.js"></script>
 ```
 
-To generate a suggestion, send in the string as an input parameter
+3. Interace with the library
 
-```javascript
-const prediction = new Predict({
-  input: "I would love to"
-});
-prediction.addEventListener("update", (suggestion, state) => {
-  // suggestion;        // Suggestion as string
-  // suggestion.next; // Get a new suggestion as string
-  // if (state == "INSIDE_SUGGESTION") {
-  //   suggestion.components // Array of matching versus not-yet-matched suggestion string
-  // }
-})
+``` 
+<script>
+  // Pass in the value of the text that should be predicted upon
+  const input = ...
+
+  window.getPredictiveText(input).then(suggestions => {
+    // Use the suggestions object here.
+  });
+</script>
 ```
 
-The event listener will provide the first best suggestion. 
+### Suggestions Object
 
-The user may end up typing characters that better fit other predictions
+Example suggestions object. The part you'll probably want to use most is `prediction` which gives you one or more
+suggested completions in order of quality.
 
-**Work in progress...**
+```json
+{
+  "anchor": "you", 
+  "anchor_token": 206, 
+  "first_level_context": "rnh", 
+  "second_level_context": "wt", 
+  "quality": 16, 
+  "prediction": ["can never get", "always start with", "will cancel existing"]
+}
+```
+
+More context on what this object means can be [found here](https://www.adamgrant.info/tiny-predictive-text)
+
+### Quality scoring
+
+(See suggestions object above)
+
+While not perfect, the quality score is a rough estimate from 0-100 of how likely the prediction is to be correct. The higher the number, the more likely it is to be correct.
+
+This can be useful if you want your predictions to be less noisy and only show up if a significant threshold of quality has been met.
 
 ## Training
 
@@ -85,20 +100,8 @@ npm install
 
 Create webpack
 
-```
-make
-```
-
-Or
-
-```
-npx webpack
-```
-
-and
-
 ```bash
-wasm-pack build --target web wasm
+wasm-pack build --target web wasm && npx webpack
 ```
 
 # Testing
