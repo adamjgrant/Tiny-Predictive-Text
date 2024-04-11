@@ -17,11 +17,12 @@ A demonstration of predictive text without an LLM, using permy.link
 
 ``` 
 <script>
-  // Pass in the value of the text that should be predicted upon
-  const input = ...
+  window.addEventListener('tinypredict-ready', () => {
+    const input = "I would like to";
 
-  window.getPredictiveText(input).then(suggestions => {
-    // Use the suggestions object here.
+    window.getPredictiveText(input).then(suggestions => {
+      // Use the suggestions object here.
+    });
   });
 </script>
 ```
