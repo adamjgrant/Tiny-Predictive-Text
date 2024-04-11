@@ -5,20 +5,29 @@
     <link rel="stylesheet" href="loading-bar.css">
     <link rel="stylesheet" href="style.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orelega+One&family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 </head>
-<h2>Tiny Predictive Text
-<br><small>Experiment using a decaying context window</small></h2>
+<h2><span class="title">Tiny Predictive Text</span>
+<br><small>The Predictive Text Model That Runs in The Browser and Fits on a Floppy Disk</small></h2>
 <p>Press <strong>Tab</strong> to autocomplete with suggestion.<br>
    Press <strong>Shift</strong> to change the suggestion</p>
 <p id="loading" class="loading">Loading model...</p>
  
-<p>
-  <br>Context string: <code><span id="cs-layer1">...</span> --> <span id="cs-layer2">...</span> --> <span id="cs-layer3">...</span></code>
-  <br>Predictive quality score: <span id="quality-score">...</span>
-</p>
-<div id="entry-holder" class="entry-holder">
-  <div id="entry" class="entry" contenteditable="true" placeholder="Start typing">&nbsp;</div><span id="suggestion-ghost" class="ghost"></span>
-</div>
+<main class="box">
+  Context string: <code><span id="cs-layer1">...</span> --> <span id="cs-layer2">...</span> --> <span id="cs-layer3">...</span></code>
+  <br>Predictive quality score: <div class="quality-score" id="quality-score">...</div>
+  <br>
+  <div id="entry-holder" class="entry-holder">
+    <div id="entry" class="entry" contenteditable="true"">&#8202;</div><span id="suggestion-ghost" class="ghost"></span>
+  </div>
+</main>
+
+<p>Tiny Predictive Text uses the ArT DeCo (Anchor Tree with Decaying Context) technique to generate sentence completions.</p>
+<p>For optimum efficiency and file size, Tiny is built in Rust and compiled to Wasm for plug-and-play implementation in frontend JavaScript using tokenized dictionaries compiled to Message Pack...<a href="https://adamgrant.info/tiny-predictive-text">(Keep reading)</a></p>
+  
+<p><a href="https://github.com/adamjgrant/Tiny-Predictive-Text">Use in your project</a></p>
 
 <script type="module" src="dist/tinypredict.js"></script>
 <script>
@@ -59,11 +68,28 @@
   const cs_layer2 = document.getElementById('cs-layer2');
   const cs_layer3 = document.getElementById('cs-layer3');
   const quality_score = document.getElementById('quality-score');
+  const quality_score_colors_gte = {
+    80: "best",
+    60: "better",
+    49: "good",
+    38: "okay",
+    20: "bad",
+    0: "terrible"
+  }
+
+  const set_quality_score_color = (score) => {
+    Object.values(quality_score_colors_gte).forEach(classname => quality_score.classList.remove(classname));
+    const key = Object.keys(quality_score_colors_gte).map(n => parseInt(n)).reverse().find(key => score >= parseInt(key));
+    const classname = quality_score_colors_gte[key];
+    quality_score.classList.add(classname);
+  }
+
   const set_debugger = (suggestions) => {
     cs_layer1.innerHTML = suggestions.second_level_context;
     cs_layer2.innerHTML = suggestions.first_level_context;
     cs_layer3.innerHTML = suggestions.anchor
     quality_score.innerHTML = suggestions.quality;
+    set_quality_score_color(suggestions.quality);
   }
 
   function moveCursorToEnd(contentEditableElement) {
@@ -103,6 +129,10 @@
       } else if (event.key === " ") {
         set_suggestion_element(true);
       }
+    });
+
+    ghost.addEventListener("click", (e) => {
+      completeSuggestion();
     });
 
     entry.addEventListener("keyup", function(event) {

@@ -1,3 +1,10 @@
+html {
+  font-family: "Urbanist", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: normal;
+  font-style: normal;
+}
+
 textarea {
   display: block;
   width: calc(100vw - 25px);
@@ -49,12 +56,27 @@ textarea {
   opacity: 0;
 }
 
+.title {
+  font-family: "Orelega One", serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 50px;
+}
+
+.box { 
+  padding: 15px;
+  border: 1px solid #CCC;
+  max-width: 600px;
+  border-radius: 15px;
+}
+
 .entry-holder {
   display: block;
   max-width: 600px;
-  padding: 15px;
   min-height: 350px;
-  border: 1px solid #CCC;
+  padding-top: 15px;
+  border: none;
+  font-size: 20px;
 }
 
 .entry {
@@ -80,4 +102,82 @@ textarea {
   background: #EEE;
   border-radius: 5px;
   margin-right: 5px;
+}
+
+.quality-score {
+  display: inline-block;
+  padding: 3px 5px;
+  background: transparent;
+  border-radius: 3px;
+}
+
+.quality-score.terrible {
+  background: darkred;
+  color: white;
+}
+
+.quality-score.bad {
+  background: #ff0000;
+  color: white;
+}
+
+.quality-score.okay {
+  background: #ff5100;
+  color: white;
+}
+
+.quality-score.good {
+  background: #edbd1f;
+  color: black;
+}
+
+.quality-score.better {
+  background: #d9e803;
+  color: black;
+}
+
+.quality-score.best {
+  background: green;
+  color: white;
+} 
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #333;
+    color: white;
+  }
+
+  .box { 
+    border: 1px solid #555;
+  }
+
+  .loaded .entry {
+    background: transparent;
+  }
+
+  .entry-holder .ghost {
+    color: #b8b8b8;
+  }
+
+  .quality-score {
+    background: #555;
+  }
+
+  .quality-score.terrible {
+    background: darkred;
+    color: white;
+  }
+
+  a[href] {
+    color: white;
+    text-decoration: underline;
+  }
+}
+
+@media screen and (min-width: 720px) {
+  body {
+    max-width: 650px;
+    padding: 25px 50px;
+  }
 }
