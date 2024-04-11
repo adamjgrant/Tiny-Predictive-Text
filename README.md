@@ -5,7 +5,7 @@ A demonstration of predictive text without an LLM, using permy.link
 
 ## Quickstart
 
-1. Include all of the files in [the dist directory](https://github.com/adamjgrant/Tiny-Predictive-Text/tree/main/dist) as well as dictionary.msgpack and tokens.msgpack in the root of your project.
+1. Include all of the files in [the dist directory](https://github.com/adamjgrant/Tiny-Predictive-Text/tree/main/dist) as well as [dictionary.msgpack](https://github.com/adamjgrant/Tiny-Predictive-Text/blob/main/dictionary.msgpack) and [tokens.msgpack](https://github.com/adamjgrant/Tiny-Predictive-Text/blob/main/tokens.msgpack) in the root of your project.
 
 2. Add Tiny predict to your HTML.
 
