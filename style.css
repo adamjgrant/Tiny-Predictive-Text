@@ -1,8 +1,18 @@
+* { box-sizing: border-box; }
+html, body {
+  height: 100%;
+  max-height: 100%;
+}
+
 html {
   font-family: "Urbanist", sans-serif;
   font-optical-sizing: auto;
   font-weight: normal;
   font-style: normal;
+}
+
+body {
+  background-image: linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%);
 }
 
 textarea {
@@ -61,13 +71,15 @@ textarea {
   font-weight: 400;
   font-style: normal;
   font-size: 50px;
+  color: rgb(91, 33, 91);
 }
 
 .box { 
   padding: 15px;
-  border: 1px solid #CCC;
+  border: none;
   max-width: 600px;
   border-radius: 15px;
+  background: rgba(255,255,255,0.25);
 }
 
 .entry-holder {
@@ -80,17 +92,17 @@ textarea {
 }
 
 .entry {
-  background: darkgrey;
+  opacity: 0.5;
   display: inline;
   outline: none;
 }
 
 .entry-holder .ghost {
-  color: #AAA;
+  color: #985feb;
 }
 
 .loaded .entry {
-  background: white;
+  opacity: 1;
 }
 
 .other-suggestions {
@@ -146,10 +158,14 @@ textarea {
   body {
     background: #333;
     color: white;
+    background-image: linear-gradient(to top, #09203f 0%, #537895 100%);
   }
 
+  .title { color: rgb(135, 193, 246); }
+
   .box { 
-    border: 1px solid #555;
+    border: none;
+    background: rgba(0,0,0,0.2);
   }
 
   .loaded .entry {
