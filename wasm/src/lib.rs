@@ -186,7 +186,7 @@ fn process_input(input: &str) -> PredictiveTextContext {
   }
 }
 
-fn filter_dictionary_on_anchor(processed_input: &PredictiveTextContext) -> (PredictiveTextContext, Option<Node>, i32) {
+fn filter_dictionary_on_anchor(processed_input: &PredictiveTextContext) -> (PredictiveTextContext, Option<Node>) {
   // Directly access the global dictionary here, assuming it's properly loaded and of the correct type.
   let global_dict = GLOBAL_DICTIONARY.lock().unwrap();
   
@@ -195,11 +195,9 @@ fn filter_dictionary_on_anchor(processed_input: &PredictiveTextContext) -> (Pred
       .and_then(|dict| dict.get(&processed_input.anchor_token))
       .cloned(); // Clone the Node if found.
 
-  let anchor_quality = if filtered_data.is_some() { 50 } else { 0 }; // Set anchor_quality based on whether filtered_data is Some or None
-
   let updated_context = processed_input.clone();
 
-  (updated_context, filtered_data, anchor_quality)
+  (updated_context, filtered_data)
 }
 
 // Calculates quality based on the best match's Levenshtein distance
@@ -207,17 +205,23 @@ fn calculate_quality(best_distance: usize, max_distance: usize) -> i32 {
   ((100.0 * (1.0 - best_distance as f32 / max_distance as f32).max(0.0).min(1.0)) / 2.0) as i32  // divides the score by 2 to scale to 50
 }
 
+fn calculate_max_distance(a: &str, b: &str) -> usize {
+  let length = std::cmp::max(a.len(), b.len());
+  length  // Or use (length / 2).ceil() as usize for half-length proportion
+}
+
 fn match_x_level_context(
   x_level_context: &str,
   filtered_dict: &Node,
-  dict_token_to_string: &HashMap<String, i32>,
-  max_distance: usize,
+  dict_token_to_string: &HashMap<String, i32>
 ) -> (Option<Node>, i32) {
   if let Node::Map(sub_map) = filtered_dict {
       let mut closest_match: Option<(&Node, usize)> = None;
+      let mut max_distance = 3;
 
       for (&key, value) in sub_map {
           if let Some(key_str) = dict_token_to_string.iter().find_map(|(s, &k)| if k == key { Some(s) } else { None }) {
+              max_distance = calculate_max_distance(x_level_context, key_str);
               let distance = levenshtein(x_level_context, key_str);
               match closest_match {
                   None => closest_match = Some((value, distance)),
@@ -240,8 +244,7 @@ fn match_x_level_context(
 
 fn filter_on_x_level_context(
   processed_input: &PredictiveTextContext,
-  filtered_dictionary: &Node,
-  max_distance: usize,
+  filtered_dictionary: &Node
 ) -> (PredictiveTextContext, Option<Node>, i32) {
   // Access the global inverted token dictionary to convert token IDs to strings
   let dict_lock = INVERTED_TOKEN_DICT.lock().unwrap();
@@ -252,8 +255,7 @@ fn filter_on_x_level_context(
       let (context_filtered_node, quality) = match_x_level_context(
           first_level_context,
           filtered_dictionary,
-          &dict_lock, // Pass reference directly without cloning
-          max_distance,
+          &dict_lock // Pass reference directly without cloning
       );
 
       let updated_context = processed_input.clone(); // Clone processed_input to create a potentially updated context
@@ -298,20 +300,20 @@ fn extract_predictions(filtered_node: Option<Node>) -> Vec<String> {
 }
 
 #[wasm_bindgen]
-pub fn get_predictive_text(input: &str, max_distance: usize) -> Result<JsValue, JsValue> {
+pub fn get_predictive_text(input: &str) -> Result<JsValue, JsValue> {
     let processed_input = process_input(input);
 
-    let (updated_context_after_filtering_anchor, anchor_filtered_dictionary, anchor_quality) = filter_dictionary_on_anchor(&processed_input);
+    let (updated_context_after_filtering_anchor, anchor_filtered_dictionary) = filter_dictionary_on_anchor(&processed_input);
 
-    let mut final_quality = anchor_quality;
+    let mut final_quality = 0;
 
     if let Some(anchor_dict) = anchor_filtered_dictionary {
-        let (updated_context_after_filtering_first_level_context, first_level_context_filtered_dictionary, first_level_quality) = filter_on_x_level_context(&updated_context_after_filtering_anchor, &anchor_dict, max_distance);
+        let (updated_context_after_filtering_first_level_context, first_level_context_filtered_dictionary, first_level_quality) = filter_on_x_level_context(&updated_context_after_filtering_anchor, &anchor_dict);
 
         final_quality += first_level_quality;
 
         if let Some(first_level_dict) = first_level_context_filtered_dictionary {
-            let (mut final_context, second_level_context_filtered_dictionary, second_level_quality) = filter_on_x_level_context(&updated_context_after_filtering_first_level_context, &first_level_dict, max_distance);
+            let (mut final_context, second_level_context_filtered_dictionary, second_level_quality) = filter_on_x_level_context(&updated_context_after_filtering_first_level_context, &first_level_dict);
 
             final_quality += second_level_quality;
             let predictions = extract_predictions(second_level_context_filtered_dictionary);
