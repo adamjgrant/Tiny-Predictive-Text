@@ -191,7 +191,6 @@
         const punctuation_regex = /[.\?&\*;:{}=\-_`~()]+/g;
         const input = event.target.innerText.split(punctuation_regex).pop().trim();
         window.getPredictiveText(input).then(suggestions => {
-          console.log(suggestions);
           last_suggestions = suggestions;
           set_debugger(suggestions);
           predictions_on_deck = suggestions.prediction.filter(_prediction => _prediction.quality >= quality_threshold);
