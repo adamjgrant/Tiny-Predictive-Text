@@ -75,7 +75,7 @@
     
     ghost.innerHTML = predictions_on_deck[0];
     if (!entry.innerText.split("").reverse()[0].match(/\s/) && !force_remove_space) {
-      ghost.innerHTML = ` ${ghost.innerHTML.trim()}`;
+      ghost.innerHTML = `&nbsp;${ghost.innerHTML.trim()}`;
     }
   }
 
@@ -170,6 +170,7 @@
     });
 
     entry.addEventListener("keyup", function(event) {
+      if (encodeURI(entry.innerText) === "%0A") { entry.innerHTML = ""; }
       if (event.key === "Shift") {
         event.preventDefault();
         predictions_on_deck.push(predictions_on_deck.shift());
