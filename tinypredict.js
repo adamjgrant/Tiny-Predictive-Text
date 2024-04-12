@@ -25,7 +25,7 @@ async function run() {
 
         return {
           "completion": prediction,
-          "quality": quality + penalty
+          "quality": quality + (quality > 0 ? penalty : 0)
         }
       });
       predictions = predictions.sort((a, b) => b.quality - a.quality);

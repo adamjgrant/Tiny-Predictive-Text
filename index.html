@@ -61,7 +61,7 @@
   let predictions_on_deck = [];
   let last_suggestions = {};
 
-  const quality_thresholds = [0, 32, 43, 60, 80];
+  const quality_thresholds = [0, 29, 43, 60, 80];
   let quality_threshold = quality_thresholds[2];
 
   const set_suggestion_element = (force_remove_space=false, clear=false) => {
@@ -191,6 +191,7 @@
         const punctuation_regex = /[.\?&\*;:{}=\-_`~()]+/g;
         const input = event.target.innerText.split(punctuation_regex).pop().trim();
         window.getPredictiveText(input).then(suggestions => {
+          console.log(suggestions);
           last_suggestions = suggestions;
           set_debugger(suggestions);
           predictions_on_deck = suggestions.prediction.filter(_prediction => _prediction.quality >= quality_threshold);
