@@ -27,23 +27,23 @@
 
 <h3>Quality threshold</h3>
 <label>
-  <input type="radio" name="quality" value="0"> None (More results, less accurate)
+  <input type="radio" name="quality"> <span class="quality-preview">...</span> None (More results, less accurate)
 </label>
 
 <label>
-  <input type="radio" name="quality" value="30"> Low 
+  <input type="radio" name="quality"> <span class="quality-preview">...</span> Low 
 </label>
 
 <label>
-  <input type="radio" name="quality" value="45" checked> Medium (Enough results, good accuracy)
+  <input type="radio" name="quality"> <span class="quality-preview">...</span> Medium (Enough results, good accuracy)
 </label> 
 
 <label>
-  <input type="radio" name="quality" value="60"> High
+  <input type="radio" name="quality"> <span class="quality-preview">...</span> High
 </label>
 
 <label>
-  <input type="radio" name="quality" value="80"> Very High (Fewer results, most accurate)
+  <input type="radio" name="quality"> <span class="quality-preview">...</span> Very High (Fewer results, most accurate)
 </label>
 
 <p>Tiny Predictive Text uses the ArT DeCo (Anchor Tree with Decaying Context) technique to generate sentence completions.</p>
@@ -59,8 +59,10 @@
   const entry_holder = document.getElementById('entry-holder');
   const ghost = document.getElementById('suggestion-ghost');
   let predictions_on_deck = [];
-  let quality_threshold = 45;
   let last_suggestions = {};
+
+  const quality_thresholds = [0, 32, 43, 60, 80];
+  let quality_threshold = quality_thresholds[2];
 
   const set_suggestion_element = (force_remove_space=false, clear=false) => {
     if (clear) {
@@ -99,15 +101,14 @@
   const cs_layer2 = document.getElementById('cs-layer2');
   const cs_layer3 = document.getElementById('cs-layer3');
   const quality_score = document.getElementById('quality-score');
-  const quality_score_colors_gte = {
-    80: "best",
-    60: "better",
-    49: "good",
-    38: "okay",
-    20: "bad",
-    0: "terrible"
-  }
-
+  const quality_score_names = ["terrible", "bad", "good", "better", "best"];
+  const quality_score_colors_gte = quality_thresholds.map((threshold, index) => {
+    return [threshold, quality_score_names[index]];
+  }).reduce((acc, [threshold, name]) => {
+    acc[threshold] = name;
+    return acc;
+  }, {});
+  
   const set_quality_score_color = (score) => {
     Object.values(quality_score_colors_gte).forEach(classname => quality_score.classList.remove(classname));
     const key = Object.keys(quality_score_colors_gte).map(n => parseInt(n)).reverse().find(key => score >= parseInt(key));
@@ -122,6 +123,9 @@
     let quality_score_value = 0;
     if (predictions_on_deck.length && predictions_on_deck[0] && predictions_on_deck[0].quality) {
       quality_score_value = predictions_on_deck[0].quality;
+    }
+    else if (suggestions.prediction && suggestions.prediction.length) {
+      quality_score_value = suggestions.prediction[0].quality;
     }
     quality_score.innerHTML = quality_score_value;
     set_quality_score_color(quality_score_value);
@@ -194,15 +198,18 @@
         });
       }
     });
-  });
 
-  const radios = document.querySelectorAll('input[name="quality"]');
+    const radios = document.querySelectorAll('input[name="quality"]');
 
-  radios.forEach(radio => {
-    radio.addEventListener('change', function() {
-      quality_threshold = this.value;
-      console.log('Quality Threshold:', this.value);
+    radios.forEach((radio, index) => {
+      const threshold = quality_thresholds[index];
+      radio.setAttribute('value', threshold);
+      if (threshold === quality_threshold) { radio.checked = true; }
+      radio.parentElement.querySelector(".quality-preview").innerHTML = threshold;
+      radio.addEventListener('change', function() {
+        quality_threshold = this.value;
+        console.log('Quality Threshold:', this.value);
+      });
     });
   });
-
 </script>

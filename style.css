@@ -139,11 +139,6 @@ label {
   color: white;
 }
 
-.quality-score.okay {
-  background: #ff5100;
-  color: white;
-}
-
 .quality-score.good {
   background: #edbd1f;
   color: black;
