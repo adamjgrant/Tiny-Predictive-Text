@@ -13,9 +13,30 @@ async function run() {
     const tokensBuffer = await tokensResponse.arrayBuffer();
     load_tokens(new Uint8Array(tokensBuffer));
 
+    const apply_ambition_penalties = (suggestions) => {
+      const quality = suggestions.quality;
+      let predictions = suggestions.prediction;
+      predictions = predictions.map((prediction) => {
+        let penalty;
+        const prediction_length = prediction.split(" ").length;
+        if (prediction_length === 1) penalty = 5;
+        if (prediction_length === 2) penalty = -1;
+        if (prediction_length === 3) penalty = -5;
+
+        return {
+          "completion": prediction,
+          "quality": quality + penalty
+        }
+      });
+      predictions = predictions.sort((a, b) => b.quality - a.quality);
+      suggestions.prediction = predictions;
+      return suggestions;
+    }
+
     window.getPredictiveText = async function(inputText) {
       try {
-          const suggestions = await get_predictive_text(inputText);
+          let suggestions = await get_predictive_text(inputText);
+          suggestions = apply_ambition_penalties(suggestions);
           return suggestions;
       } catch (error) {
           console.error("Error getting predictive text:", error);

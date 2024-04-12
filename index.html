@@ -60,6 +60,7 @@
   const ghost = document.getElementById('suggestion-ghost');
   let predictions_on_deck = [];
   let quality_threshold = 45;
+  let last_suggestions = {};
 
   const set_suggestion_element = (force_remove_space=false, clear=false) => {
     if (clear) {
@@ -68,12 +69,13 @@
       return;
     }
 
-    if (predictions_on_deck.length === 0 || predictions_on_deck[0] === "" || predictions_on_deck[0] === undefined) {
+    if (predictions_on_deck.length === 0 || predictions_on_deck[0] === undefined || predictions_on_deck[0].completion === undefined || predictions_on_deck[0].completion === "") {
+      predictions_on_deck = [];
       ghost.innerHTML = '';
       return;
     }
     
-    ghost.innerHTML = predictions_on_deck[0];
+    ghost.innerHTML = predictions_on_deck[0].completion;
     if (!entry.innerText.split("").reverse()[0].match(/\s/) && !force_remove_space) {
       ghost.innerHTML = `&nbsp;${ghost.innerHTML.trim()}`;
     }
@@ -84,7 +86,7 @@
       entry.innerText = entry.innerText.trim() + " ";
       return moveCursorToEnd(entry);
     }
-    entry.innerText = entry.innerText.trim() + " " + predictions_on_deck[0].trim() + " ";
+    entry.innerText = entry.innerText.trim() + " " + predictions_on_deck[0].completion.trim() + " ";
     predictions_on_deck = [];
     set_suggestion_element();
     moveCursorToEnd(entry);
@@ -117,8 +119,12 @@
     cs_layer1.innerHTML = suggestions.second_level_context;
     cs_layer2.innerHTML = suggestions.first_level_context;
     cs_layer3.innerHTML = suggestions.anchor
-    quality_score.innerHTML = suggestions.quality;
-    set_quality_score_color(suggestions.quality);
+    let quality_score_value = 0;
+    if (predictions_on_deck.length && predictions_on_deck[0] && predictions_on_deck[0].quality) {
+      quality_score_value = predictions_on_deck[0].quality;
+    }
+    quality_score.innerHTML = quality_score_value;
+    set_quality_score_color(quality_score_value);
   }
 
   function moveCursorToEnd(contentEditableElement) {
@@ -175,14 +181,15 @@
         event.preventDefault();
         predictions_on_deck.push(predictions_on_deck.shift());
         set_suggestion_element();
+        set_debugger(last_suggestions);
       }
       else {
         const punctuation_regex = /[.\?&\*;:{}=\-_`~()]+/g;
         const input = event.target.innerText.split(punctuation_regex).pop().trim();
         window.getPredictiveText(input).then(suggestions => {
+          last_suggestions = suggestions;
           set_debugger(suggestions);
-          if (suggestions.quality < quality_threshold) { return set_suggestion_element(false, true); }
-          predictions_on_deck = suggestions.prediction;
+          predictions_on_deck = suggestions.prediction.filter(_prediction => _prediction.quality >= quality_threshold);
           set_suggestion_element();
         });
       }
