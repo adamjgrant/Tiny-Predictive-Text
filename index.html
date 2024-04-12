@@ -12,8 +12,8 @@
 </head>
 <h2><span class="title">Tiny Predictive Text</span>
 <br><small>The Predictive Text Model That Runs in The Browser and Fits on a Floppy Disk</small></h2>
-<p>Press <strong>Tab</strong> to autocomplete with suggestion.<br>
-   Press <strong>Shift</strong> to change the suggestion</p>
+<p>Press <strong>Tab</strong> to autocomplete with suggestion or just <strong>tap</strong> on it.<br>
+   Press <strong>Shift</strong> to change the suggestion or <strong>tap</strong> on the quality score.</p>
 <p id="loading" class="loading">Loading model...</p>
  
 <main class="box">
@@ -24,6 +24,27 @@
     <div id="entry" class="entry" contenteditable="true"">&#8202;</div><span id="suggestion-ghost" class="ghost"></span>
   </div>
 </main>
+
+<h3>Quality threshold</h3>
+<label>
+  <input type="radio" name="quality" value="0"> None (More results, less accurate)
+</label>
+
+<label>
+  <input type="radio" name="quality" value="30"> Low 
+</label>
+
+<label>
+  <input type="radio" name="quality" value="45" checked> Medium (Enough results, good accuracy)
+</label> 
+
+<label>
+  <input type="radio" name="quality" value="60"> High
+</label>
+
+<label>
+  <input type="radio" name="quality" value="80"> Very High (Fewer results, most accurate)
+</label>
 
 <p>Tiny Predictive Text uses the ArT DeCo (Anchor Tree with Decaying Context) technique to generate sentence completions.</p>
 <p>For optimum efficiency and file size, Tiny is built in Rust and compiled to Wasm for plug-and-play implementation in frontend JavaScript using tokenized dictionaries compiled to Message Pack...<a href="https://adamgrant.info/tiny-predictive-text">(Keep reading)</a></p>
@@ -38,8 +59,15 @@
   const entry_holder = document.getElementById('entry-holder');
   const ghost = document.getElementById('suggestion-ghost');
   let predictions_on_deck = [];
+  let quality_threshold = 45;
 
-  const set_suggestion_element = (force_remove_space=false) => {
+  const set_suggestion_element = (force_remove_space=false, clear=false) => {
+    if (clear) {
+      ghost.innerHTML = '';
+      predictions_on_deck = [];
+      return;
+    }
+
     if (predictions_on_deck.length === 0 || predictions_on_deck[0] === "" || predictions_on_deck[0] === undefined) {
       ghost.innerHTML = '';
       return;
@@ -136,6 +164,11 @@
       completeSuggestion();
     });
 
+    quality_score.addEventListener("click", (e) => {
+      predictions_on_deck.push(predictions_on_deck.shift());
+      set_suggestion_element();
+    });
+
     entry.addEventListener("keyup", function(event) {
       if (event.key === "Shift") {
         event.preventDefault();
@@ -147,10 +180,21 @@
         const input = event.target.innerText.split(punctuation_regex).pop().trim();
         window.getPredictiveText(input).then(suggestions => {
           set_debugger(suggestions);
+          if (suggestions.quality < quality_threshold) { return set_suggestion_element(false, true); }
           predictions_on_deck = suggestions.prediction;
           set_suggestion_element();
         });
       }
     });
   });
+
+  const radios = document.querySelectorAll('input[name="quality"]');
+
+  radios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      quality_threshold = this.value;
+      console.log('Quality Threshold:', this.value);
+    });
+  });
+
 </script>

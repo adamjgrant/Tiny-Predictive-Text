@@ -121,6 +121,12 @@ textarea {
   padding: 3px 5px;
   background: transparent;
   border-radius: 3px;
+  cursor: pointer;
+}
+
+label {
+  display: block;
+  margin-top: 10px;
 }
 
 .quality-score.terrible {
