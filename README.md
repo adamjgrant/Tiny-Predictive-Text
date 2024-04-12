@@ -18,7 +18,7 @@ A demonstration of predictive text without an LLM, using permy.link
 ``` 
 <script>
   window.addEventListener('tinypredict-ready', () => {
-    const input = "I would like to";
+    const input = "I would love to tell you more about";
 
     window.getPredictiveText(input).then(suggestions => {
       // Use the suggestions object here.
@@ -34,14 +34,21 @@ suggested completions in order of quality.
 
 ```json
 {
-  "anchor": "you", 
+  "anchor": "about", 
   "anchor_token": 206, 
-  "first_level_context": "rnh", 
-  "second_level_context": "wt", 
-  "quality": 16, 
-  "prediction": ["can never get", "always start with", "will cancel existing"]
+  "first_level_context": "tym", 
+  "second_level_context": "iwl", 
+  "quality": 50,
+  "prediction": [
+    { "completion": "the", "quality": 55 },
+    { "completion": "all of", "quality": 49 }, 
+    { "completion": "how we decided", "quality": 45 }
+  ]
 }
 ```
+
+The top-level `quality` is based only on context-matching while prediction-level `quality` is based on the context and the prediction quality, so this is the one I recommend using.
+Note the predictions will come pre-sorted with the highest quality first.
 
 More context on what this object means can be [found here](https://www.adamgrant.info/tiny-predictive-text)
 
