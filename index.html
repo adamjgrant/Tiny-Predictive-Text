@@ -194,7 +194,7 @@
           last_suggestions = suggestions;
           set_debugger(suggestions);
           predictions_on_deck = suggestions.prediction.filter(_prediction => _prediction.quality >= quality_threshold);
-          set_suggestion_element();
+          set_suggestion_element()
         });
       }
     });
