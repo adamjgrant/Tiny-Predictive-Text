@@ -278,15 +278,23 @@ def finish_merge():
 
     # Delete all files in training/processed_batches
     shutil.rmtree('training/processed_batches', ignore_errors=True)
+    shutil.rmtree('training/copy_of_batches_being_processed_in_this_round', ignore_errors=True)
+    shutil.copy('training/dictionary.pkl', 'training/batches')
 
 def main():
     # If training/batches has more than one file, run the function with the first two files
+    os.makedirs('training/copy_of_batches_being_processed_in_this_round', exist_ok=True)
     shutil.rmtree('training/batches_to_process', ignore_errors=True)
     os.makedirs('training/batches_to_process', exist_ok=True)
     threads = []
 
     for file in os.listdir('training/batches'):
-        thread = threading.Thread(target=perform_file_operation, args=(f'training/batches/{file}', f'training/batches_to_process/{file}', 'copy'))
+        thread = threading.Thread(target=perform_file_operation, args=(f'training/batches/{file}', f'training/copy_of_batches_being_processed_in_this_round/{file}', 'move'))
+        threads.append(thread)
+        thread.start()
+
+    for file in os.listdir('training/copy_of_batches_being_processed_in_this_round'):
+        thread = threading.Thread(target=perform_file_operation, args=(f'training/copy_of_batches_being_processed_in_this_round/{file}', f'training/batches_to_process/{file}', 'copy'))
         threads.append(thread)
         thread.start()
 
