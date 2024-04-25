@@ -10,6 +10,7 @@ from lib.process_predictive_words import main as process_predictive_words
 from lib.process_context_words import main as process_context_words
 from lib.finish_filing import main as finish_filing
 from lib.create_dictionary import create_batch
+from lib.merge_batches import main as merge_batches
 import asyncio
 import gc
 from lib.constants import PRUNE_FREQUENCY, TARGET_DICTIONARY_COUNT, TOTAL_WORD_COUNT
@@ -41,6 +42,7 @@ async def save_position(progress_file, current_position, word_count, tree_store)
   return DEFAULT_TREE_STORE
 
 async def main(retain=False):
+  merge_batches()
   tree_store = DEFAULT_TREE_STORE
   if not retain and os.path.exists('training'):
       shutil.rmtree('training')
@@ -103,6 +105,9 @@ async def main(retain=False):
               # Save position and prune every PRUNE_FREQUENCY entries
               tree_store = await save_position('training/processing_progress.txt', i + start_position + 1, word_count, tree_store)
               gc.collect()
+
+          if (word_count + 1) % (PRUNE_FREQUENCY * 20) == 0:
+              merge_batches()
             
   await create_batch(tree_store, TARGET_DICTIONARY_COUNT)
 
