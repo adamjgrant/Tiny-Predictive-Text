@@ -42,7 +42,6 @@ async def save_position(progress_file, current_position, word_count, tree_store)
   return DEFAULT_TREE_STORE
 
 async def main(retain=False):
-  merge_batches()
   tree_store = DEFAULT_TREE_STORE
   if not retain and os.path.exists('training'):
       shutil.rmtree('training')
