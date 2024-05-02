@@ -105,8 +105,8 @@ async def main(retain=False):
               tree_store = await save_position('training/processing_progress.txt', i + start_position + 1, word_count, tree_store)
               gc.collect()
 
-          if (word_count + 1) % (PRUNE_FREQUENCY * 10) == 0:
-              merge_batches()
+          if (word_count + 1) % (PRUNE_FREQUENCY * 100) == 0:
+              await asyncio.run(merge_batches())
             
   await create_batch(tree_store, TARGET_DICTIONARY_COUNT)
 

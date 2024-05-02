@@ -4,6 +4,7 @@ import pickle
 import threading
 from .constants import TARGET_DICTIONARY_COUNT, MAX_PREDICTIONS, SUBBRANCH_PRUNE_SIZE
 from .create_dictionary import create_dictionary_and_tokenize
+import asyncio
 # PRUNE_FREQUENCY = 4 * 1000 * 1000 # Every this many words
 # TARGET_DICTIONARY_COUNT = 100
 
@@ -281,7 +282,7 @@ def finish_merge():
     shutil.rmtree('training/copy_of_batches_being_processed_in_this_round', ignore_errors=True)
     shutil.copy('training/dictionary.pkl', 'training/batches')
 
-def main():
+async def main():
     # If training/batches has more than one file, run the function with the first two files
     os.makedirs('training/copy_of_batches_being_processed_in_this_round', exist_ok=True)
     shutil.rmtree('training/batches_to_process', ignore_errors=True)
