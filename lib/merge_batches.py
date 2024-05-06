@@ -314,4 +314,4 @@ async def main():
         finish_merge()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

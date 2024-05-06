@@ -106,7 +106,7 @@ async def main(retain=False):
               gc.collect()
 
           if (word_count + 1) % (PRUNE_FREQUENCY * 100) == 0:
-              await asyncio.run(merge_batches())
+              await merge_batches()
             
   await create_batch(tree_store, TARGET_DICTIONARY_COUNT)
 
