@@ -13,7 +13,7 @@ A demonstration of predictive text without an LLM, using permy.link
 <script type="module" src="tinypredict.js"></script>
 ```
 
-3. Interace with the library
+3. Interface with the library
 
 ``` 
 <script>
