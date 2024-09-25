@@ -38,7 +38,8 @@ async def save_position(progress_file, current_position, word_count, tree_store)
       f.write(f"{str(current_position)},{str(word_count)}")
 
   print(f"Passed %s positions. Time to optimize before continuing..." % PRUNE_FREQUENCY)
-  await create_batch(tree_store, TARGET_DICTIONARY_COUNT)
+  # TODO This was causing too many problems.
+  # await create_batch(tree_store, TARGET_DICTIONARY_COUNT)
   return DEFAULT_TREE_STORE
 
 async def main(retain=False):

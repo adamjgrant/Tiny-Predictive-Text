@@ -5,3 +5,10 @@ Tiny_Predictive_Text.egg-info/SOURCES.txt
 Tiny_Predictive_Text.egg-info/dependency_links.txt
 Tiny_Predictive_Text.egg-info/requires.txt
 Tiny_Predictive_Text.egg-info/top_level.txt
+lib/__init__.py
+lib/constants.py
+lib/create_dictionary.py
+lib/finish_filing.py
+lib/merge_batches.py
+lib/process_context_words.py
+lib/process_predictive_words.py
