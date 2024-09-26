@@ -131,8 +131,8 @@ async def main(retain=False):
 
             # Silencing for now. Creating too many problems.
             # Merge batches periodically
-            if (word_count + 1) % (PRUNE_FREQUENCY * 50) == 0:
-                await merge_batches()
+            # if (word_count + 1) % (PRUNE_FREQUENCY * 25) == 0:
+                # await merge_batches()
 
     # Final batch creation after processing is complete
     await create_batch(tree_store, TARGET_DICTIONARY_COUNT)
