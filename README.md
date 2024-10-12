@@ -69,7 +69,9 @@ No GPUs OS requirements or nVidia libraries needed. I run this on my Macbook Pro
 
 then 
 
-`python train.py --retain`
+```
+python train.py --retain
+```
 
 To begin the training. Every once in a while it will optimize by pruning word set dictionaries and branches recursively. At this point (look for it in the logs) it will create a new batch file in /training/batches. It does this so the script can be restarted and it can pick up where it left off. Making separate batches also prevents the script from locking up.
 
@@ -80,9 +82,17 @@ This is useful for just taking a peek at the data so far and playing with it in 
 
 Once enough batches are created, merge them with
 
-`python -m lib.merge_batches`
+```
+python -m lib.merge_batches
+```
 
 This will merge all the batches and create a msgpack dictionary once all merges have completed.
+
+You can also run this periodically like
+
+```
+while true; do cd /Users/adamgrant/repos/Tiny-Predictive-Text && /opt/homebrew/bin/python3.10 -m lib.merge_batches; sleep 1800; done
+```
 
 ## WASM Development
 
