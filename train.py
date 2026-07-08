@@ -74,7 +74,7 @@ async def main(retain=False):
     datasets.logging.set_verbosity(datasets.logging.WARNING)
     logging.getLogger('fsspec').setLevel(logging.WARNING)
     logging.getLogger('urllib3').setLevel(logging.WARNING)
-    dataset = datasets.load_dataset('oscar-corpus/OSCAR-2201', language='en', split='train', streaming=True, trust_remote_code=True)
+    dataset = datasets.load_dataset('oscar-corpus/OSCAR-2201', language='en', split='train', streaming=True)
 
     word_count = 0
     start_position = 0
@@ -83,7 +83,7 @@ async def main(retain=False):
     # Load previous progress (either old or new format)
     if retain:
         state_dict, word_count = await load_progress('training/processing_progress.txt')
-        if isinstance(state_dict, dict):
+        if isinstance(state_dict, dict) and hasattr(dataset, 'load_state_dict'):
             dataset.load_state_dict(state_dict)
         else:
             # Resume using old method; we still skip to start position but will save with state_dict
@@ -107,8 +107,8 @@ async def main(retain=False):
         pbar.update(len(words))
 
         # Replace reserved characters
-        words = [word.replace("score", "\sscore") for word in words]
-        words = [word.replace("prediction", "\sprediction") for word in words]
+        words = [word.replace("score", "\\sscore") for word in words]
+        words = [word.replace("prediction", "\\sprediction") for word in words]
 
         # Process words three at a time with a shifting window
         for j in range(len(words) - 2):
